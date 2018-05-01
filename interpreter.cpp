@@ -9,6 +9,7 @@ struct ForthInterpreter {
         builder = llvm::make_unique<llvm::IRBuilder<>>(context);
         module = llvm::make_unique<llvm::Module>("llvm-forth", context);
         createMain();
+
         createReturn(0);
     }
 
@@ -24,7 +25,7 @@ private:
     void createMain() {
         auto type = llvm::FunctionType::get(llvm::Type::getInt32Ty(context), false);
         auto mainFunc = llvm::Function::Create(type, llvm::Function::ExternalLinkage, "main", module.get());
-        auto basicBlock = llvm::BasicBlock::Create(context, "", mainFunc);
+        auto basicBlock = llvm::BasicBlock::Create(context, "entry", mainFunc);
         builder->SetInsertPoint(basicBlock);
     }
 
