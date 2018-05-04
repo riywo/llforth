@@ -8,8 +8,9 @@ find_package(LLVM REQUIRED CONFIG)
 include_directories(${LLVM_INCLUDE_DIRS})
 add_definitions(${LLVM_DEFINITIONS})
 
-add_executable(compiler compiler.cpp)
 llvm_map_components_to_libnames(llvm_libs core)
+
+add_executable(compiler compiler.cpp)
 target_link_libraries(compiler ${llvm_libs})
 
 add_custom_command(OUTPUT compiler.ll compiler.o
@@ -20,3 +21,7 @@ add_custom_command(OUTPUT compiler.ll compiler.o
 add_executable(llvm-forth compiler.o)
 target_link_libraries(llvm-forth ${llvm_libs}) # TODO
 
+add_executable(dtc dtc.cpp)
+target_link_libraries(dtc ${llvm_libs})
+add_executable(itc itc.cpp)
+target_link_libraries(itc ${llvm_libs})

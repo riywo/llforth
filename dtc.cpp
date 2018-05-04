@@ -47,14 +47,6 @@ struct Builder : llvm::IRBuilder<> {
     void dump() {
         TheModule->print(llvm::outs(), nullptr);
     }
-
-    llvm::GlobalVariable* createXT(const std::string& Name, llvm::BasicBlock* Block) {
-        auto xt = createGlobalVariable(Name, getInt8PtrTy());
-        xt->setLinkage(llvm::GlobalVariable::LinkageTypes::PrivateLinkage);
-        xt->setConstant(true);
-        xt->setInitializer(llvm::BlockAddress::get(Block));
-        return xt;
-    }
 };
 
 int main() {
@@ -66,24 +58,20 @@ int main() {
     auto entry = builder.createBasicBlock("entry", main);
     auto top = builder.createBasicBlock("top", main);
     auto next = builder.createBasicBlock("next", main);
-    auto i_A = builder.createBasicBlock("i_A", main);
-    auto i_B = builder.createBasicBlock("i_B", main);
-    auto i_exit = builder.createBasicBlock("i_exit", main);
+    auto A = builder.createBasicBlock("A", main);
+    auto B = builder.createBasicBlock("B", main);
+    auto exit = builder.createBasicBlock("exit", main);
 
-    auto xt_A = builder.createXT("xt_A", i_A);
-    auto xt_B = builder.createXT("xt_B", i_B);
-    auto xt_exit = builder.createXT("xt_exit", i_exit);
-
-    auto code_type = builder.getArrayType(builder.getInt8PtrTy()->getPointerTo(), 5);
+    auto code_type = builder.getArrayType(builder.getInt8PtrTy(), 5);
     auto code = builder.createGlobalVariable("code", code_type);
     code->setLinkage(llvm::GlobalVariable::LinkageTypes::PrivateLinkage);
     code->setConstant(true);
     code->setInitializer(llvm::ConstantArray::get(code_type, {
-        xt_A,
-        xt_B,
-        xt_A,
-        xt_B,
-        xt_exit,
+        llvm::BlockAddress::get(A),
+        llvm::BlockAddress::get(B),
+        llvm::BlockAddress::get(A),
+        llvm::BlockAddress::get(B),
+        llvm::BlockAddress::get(exit),
     }));
 
     builder.SetInsertPoint(entry);
@@ -91,29 +79,28 @@ int main() {
     builder.CreateBr(top);
 
     builder.SetInsertPoint(top);
-    auto ip = builder.CreatePHI(builder.getInt8PtrTy()->getPointerTo()->getPointerTo(), 2, "ip");
-    auto w = builder.CreateLoad(ip, "w");
-    auto addr = builder.CreateLoad(w, "addr");
+    auto ip = builder.CreatePHI(builder.getInt8PtrTy()->getPointerTo(), 2, "ip");
+    auto addr = builder.CreateLoad(ip, "addr");
     auto new_ip = builder.CreateGEP(ip, builder.getInt32(1), "new_ip");
     ip->addIncoming(start, entry);
     ip->addIncoming(new_ip, next);
     auto br = builder.CreateIndirectBr(addr, 3);
-    br->addDestination(i_A);
-    br->addDestination(i_B);
-    br->addDestination(i_exit);
+    br->addDestination(A);
+    br->addDestination(B);
+    br->addDestination(exit);
 
     builder.SetInsertPoint(next);
     builder.CreateBr(top);
 
-    builder.SetInsertPoint(i_A);
+    builder.SetInsertPoint(A);
     builder.CreateCall(putchar, builder.getInt32(65));
     builder.CreateBr(next);
 
-    builder.SetInsertPoint(i_B);
+    builder.SetInsertPoint(B);
     builder.CreateCall(putchar, builder.getInt32(66));
     builder.CreateBr(next);
 
-    builder.SetInsertPoint(i_exit);
+    builder.SetInsertPoint(exit);
     builder.CreateCall(putchar, builder.getInt32(10));
     builder.CreateRet(builder.getInt32(0));
 
