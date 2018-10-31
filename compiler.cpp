@@ -15,19 +15,19 @@ static LLVMContext TheContext;
 static IRBuilder<> Builder(TheContext);
 static std::unique_ptr<Module> TheModule;
 
-const static auto IntType = Builder.getInt8Ty();
+const static auto IntType = Builder.getInt32Ty();
 const static auto StrType = Builder.getInt8PtrTy();
-const static auto PtrType = Builder.getInt8PtrTy();
-const static auto PtrPtrType = PtrType->getPointerTo();
-const static auto PtrPtrPtrType = PtrPtrType->getPointerTo();
+const static auto AddressType = Builder.getInt8PtrTy();
 const static auto NodeType = StructType::create(TheContext, "node");
 const static auto NodePtrType = NodeType->getPointerTo();
+const static auto NodePtrPtrType = NodePtrType->getPointerTo();
 
 static Function* MainFunc;
 static BasicBlock* Entry;
 static BasicBlock* Next;
+static BasicBlock* Lit;
 static Constant* LastNode = ConstantPointerNull::get(NodePtrType);
-static std::map<std::string, Constant*> xtMap = {};
+static std::map<std::string, Constant*> Dictionary = {};
 static std::vector<BasicBlock*> NativeBlocks = {};
 
 static AllocaInst* pc;
@@ -49,21 +49,36 @@ static Constant* CreateGlobalVariable(const std::string& name, Type* type, Const
     return g;
 }
 
-static void AddDictionary(const std::string& word, Constant* xt,
-        Constant* impl=ConstantPointerNull::get(PtrPtrPtrType)) {
+static Constant* AddDictionary(const std::string& word, BasicBlock* block, Constant* impl, int integer) {
+    auto xt =  BlockAddress::get(block);
     auto str_ptr = Builder.CreateGlobalStringPtr(word, "k_" + word);
-    auto node_val = ConstantStruct::get(NodeType, LastNode, str_ptr, xt, impl);
-    LastNode = CreateGlobalVariable("d_" + word, NodeType, node_val);
+    auto node_val = ConstantStruct::get(NodeType, LastNode, str_ptr, xt, impl, GetInt(integer));
+    auto node = CreateGlobalVariable("d_" + word, NodeType, node_val);
+    Dictionary[word] = node;
+    LastNode = node;
+    return node;
 }
 
-static void AddNativeWord(const std::string& word, const std::function<void()>& impl) {
+static Constant* AddDictionary(const std::string& word, BasicBlock* block) {
+    return AddDictionary(word, block, ConstantPointerNull::get(NodePtrPtrType), 0);
+}
+
+static Constant* AddDictionary(const std::string& word, BasicBlock* block, int integer) {
+    return AddDictionary(word, block, ConstantPointerNull::get(NodePtrPtrType), integer);
+}
+
+static BasicBlock* AddNativeWord(const std::string& word, const std::function<void()>& impl) {
     auto block = BasicBlock::Create(TheContext, "i_" + word, MainFunc);
     Builder.SetInsertPoint(block);
     impl();
     NativeBlocks.push_back(block);
-    auto xt = CreateGlobalVariable("xt_" + word, PtrType, BlockAddress::get(block));
-    xtMap[word] = xt;
-    AddDictionary(word, xt);
+    AddDictionary(word, block);
+    return block;
+}
+
+static Constant* AddLit(const std::string& word) {
+    auto value = std::stoi(word);
+    return AddDictionary(word, Lit, value);
 }
 
 static void Push(Value* value) {
@@ -88,22 +103,23 @@ static void Initialize() {
     Next = BasicBlock::Create(TheContext, "next", MainFunc);
 
     NodeType->setBody(
-            NodePtrType,  // Previous node
-            StrType,      // Word of node
-            PtrPtrType,   // Execution token
-            PtrPtrPtrType // Pointer to array of execution tokens if colon word
+            NodePtrType,    // Previous node
+            StrType,        // Word of node
+            AddressType,    // Execution token (BlockAddress)
+            NodePtrPtrType, // Array of nodes if colon word
+            IntType         // Integer if lit
     );
 
     Builder.SetInsertPoint(Entry);
-    pc = Builder.CreateAlloca(PtrPtrPtrType, nullptr, "pc");
-    w = Builder.CreateAlloca(PtrPtrPtrType, nullptr, "w");
+    pc = Builder.CreateAlloca(NodePtrPtrType, nullptr, "pc");
+    w = Builder.CreateAlloca(NodePtrPtrType, nullptr, "w");
     sp = Builder.CreateAlloca(IntType, nullptr, "sp");
     Builder.CreateStore(GetInt(0), sp);
     auto stack_type = ArrayType::get(IntType, 1024);
     stack = CreateGlobalVariable("stack", stack_type, UndefValue::get(stack_type), false);
 
     AddNativeWord("foo", [](){
-        Push(GetInt(8));
+        Push(GetInt(1));
         Push(GetInt(7));
         Builder.CreateBr(Next);
     });
@@ -116,18 +132,20 @@ static void Initialize() {
     AddNativeWord("bye", [](){
         Builder.CreateRet(GetInt(0));
     });
+    Lit = AddNativeWord("lit", [](){
+        Builder.CreateRet(GetInt(99));
+    });
 }
 
 static std::vector<Constant*> MainLoop() {
     std::string token;
     auto code = std::vector<Constant*>();
     while (std::cin >> token) {
-        auto xt = xtMap.find(token);
-        if (xt == xtMap.end()) { // Not found
-            auto value = std::stoi(token);
-
+        auto node = Dictionary.find(token);
+        if (node == Dictionary.end()) { // Not found
+            code.push_back(AddLit(token));
         } else {
-            code.push_back(xt->second);
+            code.push_back(node->second);
         }
     }
     return code;
@@ -135,7 +153,7 @@ static std::vector<Constant*> MainLoop() {
 
 static void Finalize(const std::vector<Constant*>& code) {
     Builder.SetInsertPoint(Entry);
-    auto code_type = ArrayType::get(PtrPtrType, code.size());
+    auto code_type = ArrayType::get(NodePtrType, code.size());
     auto code_block = CreateGlobalVariable("code", code_type, ConstantArray::get(code_type, code));
     auto start = Builder.CreateGEP(code_block, {GetInt(0), GetInt(0)}, "start");
     Builder.CreateStore(start, pc);
@@ -145,7 +163,8 @@ static void Finalize(const std::vector<Constant*>& code) {
     auto current_pc = Builder.CreateLoad(pc);
     Builder.CreateStore(current_pc, w);
     Builder.CreateStore(Builder.CreateGEP(current_pc, GetInt(1)), pc);
-    auto addr = Builder.CreateLoad(Builder.CreateLoad(Builder.CreateLoad(w)));
+    auto node = Builder.CreateLoad(current_pc);
+    auto addr = Builder.CreateLoad(Builder.CreateGEP(node, {GetInt(0), GetInt(2)}));
     auto br = Builder.CreateIndirectBr(addr, NativeBlocks.size());
     for (auto block : NativeBlocks) {
         br->addDestination(block);
