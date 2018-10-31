@@ -19,6 +19,7 @@ const static auto IntType = Builder.getInt8Ty();
 const static auto StrType = Builder.getInt8PtrTy();
 const static auto PtrType = Builder.getInt8PtrTy();
 const static auto PtrPtrType = PtrType->getPointerTo();
+const static auto PtrPtrPtrType = PtrPtrType->getPointerTo();
 const static auto NodeType = StructType::create(TheContext, "node");
 const static auto NodePtrType = NodeType->getPointerTo();
 
@@ -48,18 +49,21 @@ static Constant* CreateGlobalVariable(const std::string& name, Type* type, Const
     return g;
 }
 
+static void AddDictionary(const std::string& word, Constant* xt,
+        Constant* impl=ConstantPointerNull::get(PtrPtrPtrType)) {
+    auto str_ptr = Builder.CreateGlobalStringPtr(word, "k_" + word);
+    auto node_val = ConstantStruct::get(NodeType, LastNode, str_ptr, xt, impl);
+    LastNode = CreateGlobalVariable("d_" + word, NodeType, node_val);
+}
+
 static void AddNativeWord(const std::string& word, const std::function<void()>& impl) {
     auto block = BasicBlock::Create(TheContext, "i_" + word, MainFunc);
     Builder.SetInsertPoint(block);
     impl();
     NativeBlocks.push_back(block);
-
-    auto xt = BlockAddress::get(block);
+    auto xt = CreateGlobalVariable("xt_" + word, PtrType, BlockAddress::get(block));
     xtMap[word] = xt;
-
-    auto str_ptr = Builder.CreateGlobalStringPtr(word, "k_" + word);
-    auto node_val = ConstantStruct::get(NodeType, LastNode, str_ptr, xt, ConstantPointerNull::get(PtrPtrType));
-    LastNode = CreateGlobalVariable("d_" + word, NodeType, node_val);
+    AddDictionary(word, xt);
 }
 
 static void Push(Value* value) {
@@ -84,15 +88,15 @@ static void Initialize() {
     Next = BasicBlock::Create(TheContext, "next", MainFunc);
 
     NodeType->setBody(
-            NodePtrType, // Previous node
-            StrType,     // Word of node
-            PtrType,     // Execution token (block address)
-            PtrPtrType   // Pointer to array of code if colon word
+            NodePtrType,  // Previous node
+            StrType,      // Word of node
+            PtrPtrType,   // Execution token
+            PtrPtrPtrType // Pointer to array of execution tokens if colon word
     );
 
     Builder.SetInsertPoint(Entry);
-    pc = Builder.CreateAlloca(PtrPtrType, nullptr, "pc");
-    w = Builder.CreateAlloca(PtrPtrType, nullptr, "w");
+    pc = Builder.CreateAlloca(PtrPtrPtrType, nullptr, "pc");
+    w = Builder.CreateAlloca(PtrPtrPtrType, nullptr, "w");
     sp = Builder.CreateAlloca(IntType, nullptr, "sp");
     Builder.CreateStore(GetInt(0), sp);
     auto stack_type = ArrayType::get(IntType, 1024);
@@ -131,7 +135,7 @@ static std::vector<Constant*> MainLoop() {
 
 static void Finalize(const std::vector<Constant*>& code) {
     Builder.SetInsertPoint(Entry);
-    auto code_type = ArrayType::get(PtrType, code.size());
+    auto code_type = ArrayType::get(PtrPtrType, code.size());
     auto code_block = CreateGlobalVariable("code", code_type, ConstantArray::get(code_type, code));
     auto start = Builder.CreateGEP(code_block, {GetInt(0), GetInt(0)}, "start");
     Builder.CreateStore(start, pc);
@@ -141,7 +145,8 @@ static void Finalize(const std::vector<Constant*>& code) {
     auto current_pc = Builder.CreateLoad(pc);
     Builder.CreateStore(current_pc, w);
     Builder.CreateStore(Builder.CreateGEP(current_pc, GetInt(1)), pc);
-    auto br = Builder.CreateIndirectBr(Builder.CreateLoad(Builder.CreateLoad(w)), NativeBlocks.size());
+    auto addr = Builder.CreateLoad(Builder.CreateLoad(Builder.CreateLoad(w)));
+    auto br = Builder.CreateIndirectBr(addr, NativeBlocks.size());
     for (auto block : NativeBlocks) {
         br->addDestination(block);
     }
