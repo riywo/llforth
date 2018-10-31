@@ -19,7 +19,6 @@ const static auto IntType = Builder.getInt32Ty();
 const static auto StrType = Builder.getInt8PtrTy();
 const static auto PtrType = Builder.getInt8PtrTy();
 const static auto PtrPtrType = PtrType->getPointerTo();
-const static auto PtrPtrPtrType = PtrPtrType->getPointerTo();
 const static auto NodeType = StructType::create(TheContext, "node");
 const static auto NodePtrType = NodeType->getPointerTo();
 
@@ -46,11 +45,11 @@ static void AddNativeWord(const std::string& word, const std::function<void()>& 
     impl();
     NativeBlocks.push_back(block);
 
-    auto xt = CreateGlobalVariable("xt_" + word, PtrType, BlockAddress::get(block));
+    auto xt = BlockAddress::get(block);
     xtMap[word] = xt;
 
     auto str_ptr = Builder.CreateGlobalStringPtr(word, "k_" + word);
-    auto node_val = ConstantStruct::get(NodeType, LastNode, str_ptr, xt, ConstantPointerNull::get(PtrPtrPtrType));
+    auto node_val = ConstantStruct::get(NodeType, LastNode, str_ptr, xt, ConstantPointerNull::get(PtrPtrType));
     LastNode = CreateGlobalVariable("d_" + word, NodeType, node_val);
 }
 
@@ -63,8 +62,8 @@ static void Initialize() {
     NodeType->setBody(
             NodePtrType,
             StrType,
-            PtrPtrType,
-            PtrPtrPtrType);
+            PtrType,
+            PtrPtrType);
 
     AddNativeWord("foo", [](){
         Builder.CreateBr(Next);
@@ -102,22 +101,21 @@ static std::vector<Constant*> MainLoop() {
 }
 
 static void Finalize(const std::vector<Constant*>& code) {
-    auto code_type = ArrayType::get(PtrPtrType, code.size());
+    auto code_type = ArrayType::get(PtrType, code.size());
     auto code_block = CreateGlobalVariable("code", code_type, ConstantArray::get(code_type, code));
 
     Builder.SetInsertPoint(Entry);
     auto start = Builder.CreateGEP(code_block, {Builder.getInt32(0), Builder.getInt32(0)}, "start");
-    auto pc = Builder.CreateAlloca(PtrPtrPtrType, nullptr, "pc");
-    auto w = Builder.CreateAlloca(PtrPtrPtrType, nullptr, "w");
+    auto pc = Builder.CreateAlloca(PtrPtrType, nullptr, "pc");
+    auto w = Builder.CreateAlloca(PtrPtrType, nullptr, "w");
     Builder.CreateStore(start, pc);
     Builder.CreateBr(Next);
 
     Builder.SetInsertPoint(Next);
     auto current_pc = Builder.CreateLoad(pc);
     Builder.CreateStore(current_pc, w);
-    auto new_pc = Builder.CreateGEP(current_pc, Builder.getInt8(1), "new_pc");
-    Builder.CreateStore(new_pc, pc);
-    auto br = Builder.CreateIndirectBr(Builder.CreateLoad(Builder.CreateLoad(Builder.CreateLoad(w))), NativeBlocks.size());
+    Builder.CreateStore(Builder.CreateGEP(current_pc, Builder.getInt8(1)), pc);
+    auto br = Builder.CreateIndirectBr(Builder.CreateLoad(Builder.CreateLoad(w)), NativeBlocks.size());
     for (auto block : NativeBlocks) {
         br->addDestination(block);
     }
