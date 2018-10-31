@@ -15,7 +15,7 @@ target_link_libraries(compiler ${llvm_libs})
 add_custom_command(
         OUTPUT out.ll out.o
         DEPENDS compiler
-        COMMAND $<TARGET_FILE:compiler> > out.ll
+        COMMAND echo 'foo bar bye' | $<TARGET_FILE:compiler> > out.ll
         COMMAND cat out.ll
         COMMAND ${LLVM_TOOLS_BINARY_DIR}/llc -filetype=obj out.ll
 )

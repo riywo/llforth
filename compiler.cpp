@@ -71,7 +71,7 @@ static void Initialize() {
     AddNativeWord("bar", [](){
         Builder.CreateBr(Next);
     });
-    AddNativeWord("exit", [](){
+    AddNativeWord("bye", [](){
         Builder.CreateRet(Builder.getInt32(0));
     });
 }
@@ -79,24 +79,14 @@ static void Initialize() {
 static std::vector<Constant*> MainLoop() {
     std::string token;
     auto code = std::vector<Constant*>();
-/**
     while (std::cin >> token) {
-        if (token == "bye") {
-            break;
-        } else {
-            auto xt = xtMap.find(token);
-            if (xt == xtMap.end()) {
+        auto xt = xtMap.find(token);
+        if (xt == xtMap.end()) {
 
-            } else {
-                code.push_back(xt->second);
-            }
+        } else {
+            code.push_back(xt->second);
         }
     }
-**/
-    code.push_back(xtMap.find("foo")->second);
-    code.push_back(xtMap.find("bar")->second);
-    code.push_back(xtMap.find("exit")->second);
-
     return code;
 }
 
