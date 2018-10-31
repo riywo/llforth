@@ -30,6 +30,8 @@ static Constant* LastNode = ConstantPointerNull::get(NodePtrType);
 static std::map<std::string, Constant*> Dictionary = {};
 static std::vector<BasicBlock*> NativeBlocks = {};
 
+static Function* PrintFunc;
+
 static AllocaInst* pc;
 static AllocaInst* w;
 static AllocaInst* sp;
@@ -88,12 +90,31 @@ static void Push(Value* value) {
     Builder.CreateStore(Builder.CreateAdd(current_sp, GetInt(1)), sp);
 }
 
+static LoadInst* Peek() {
+    auto current_sp = Builder.CreateLoad(sp);
+    auto top_sp = Builder.CreateSub(current_sp, GetInt(1));
+    auto addr = Builder.CreateGEP(stack, {GetInt(0), top_sp});
+    return Builder.CreateLoad(addr);
+}
+
 static LoadInst* Pop() {
     auto current_sp = Builder.CreateLoad(sp);
     auto top_sp = Builder.CreateSub(current_sp, GetInt(1));
     auto addr = Builder.CreateGEP(stack, {GetInt(0), top_sp});
     Builder.CreateStore(top_sp, sp);
     return Builder.CreateLoad(addr);
+}
+
+static void InitializePrint() {
+    PrintFunc = Function::Create(FunctionType::get(Builder.getVoidTy(), {IntType}, false), Function::PrivateLinkage, "print", TheModule.get());
+    auto entry = BasicBlock::Create(TheContext, "entry", PrintFunc);
+    Builder.SetInsertPoint(entry);
+    auto arg = PrintFunc->arg_begin();
+    auto printf_type = FunctionType::get(IntType, {StrType}, true);
+    auto printf = cast<Function>(TheModule->getOrInsertFunction("printf", printf_type));
+    auto d = Builder.CreateGlobalStringPtr("%d ");
+    Builder.CreateCall(printf, {d, arg});
+    Builder.CreateRetVoid();
 }
 
 static void Initialize() {
@@ -110,6 +131,8 @@ static void Initialize() {
             IntType         // Integer if lit
     );
 
+    InitializePrint();
+
     Builder.SetInsertPoint(Entry);
     pc = Builder.CreateAlloca(NodePtrPtrType, nullptr, "pc");
     w = Builder.CreateAlloca(NodePtrPtrType, nullptr, "w");
@@ -118,22 +141,46 @@ static void Initialize() {
     auto stack_type = ArrayType::get(IntType, 1024);
     stack = CreateGlobalVariable("stack", stack_type, UndefValue::get(stack_type), false);
 
-    AddNativeWord("foo", [](){
-        Push(GetInt(1));
-        Push(GetInt(7));
-        Builder.CreateBr(Next);
-    });
-    AddNativeWord("bar", [](){
-        Pop();
-        auto val = Pop();
-        Builder.CreateRet(val);
-        Builder.CreateBr(Next);
-    });
     AddNativeWord("bye", [](){
         Builder.CreateRet(GetInt(0));
     });
+    AddNativeWord("+", [](){
+        auto right = Pop();
+        auto left = Pop();
+        auto result = Builder.CreateAdd(left, right);
+        Push(result);
+        Builder.CreateBr(Next);
+    });
+    AddNativeWord("-", [](){
+        auto right = Pop();
+        auto left = Pop();
+        auto result = Builder.CreateSub(left, right);
+        Push(result);
+        Builder.CreateBr(Next);
+    });
+    AddNativeWord("*", [](){
+        auto right = Pop();
+        auto left = Pop();
+        auto result = Builder.CreateMul(left, right);
+        Push(result);
+        Builder.CreateBr(Next);
+    });
+    AddNativeWord("/", [](){
+        auto right = Pop();
+        auto left = Pop();
+        auto result = Builder.CreateUDiv(left, right);
+        Push(result);
+        Builder.CreateBr(Next);
+    });
+    AddNativeWord(".", [](){
+        Builder.CreateCall(PrintFunc, {Pop()});
+        Builder.CreateBr(Next);
+    });
     Lit = AddNativeWord("lit", [](){
-        Builder.CreateRet(GetInt(99));
+        auto node = Builder.CreateLoad(Builder.CreateLoad(w));
+        auto value = Builder.CreateLoad(Builder.CreateGEP(node, {GetInt(0), GetInt(4)}));
+        Push(value);
+        Builder.CreateBr(Next);
     });
 }
 
