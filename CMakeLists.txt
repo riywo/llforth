@@ -12,16 +12,13 @@ llvm_map_components_to_libnames(llvm_libs core)
 
 add_executable(compiler compiler.cpp)
 target_link_libraries(compiler ${llvm_libs})
-
-add_custom_command(OUTPUT compiler.ll compiler.o
+add_custom_command(
+        OUTPUT out.ll out.o
         DEPENDS compiler
-        COMMAND $<TARGET_FILE:compiler> > compiler.ll
-        COMMAND ${LLVM_TOOLS_BINARY_DIR}/llc -filetype=obj compiler.ll)
+        COMMAND $<TARGET_FILE:compiler> > out.ll
+        COMMAND cat out.ll
+        COMMAND ${LLVM_TOOLS_BINARY_DIR}/llc -filetype=obj out.ll
+)
 
-add_executable(llvm-forth compiler.o)
-target_link_libraries(llvm-forth ${llvm_libs}) # TODO
-
-add_executable(dtc dtc.cpp)
-target_link_libraries(dtc ${llvm_libs})
-add_executable(itc itc.cpp)
-target_link_libraries(itc ${llvm_libs})
+add_executable(llvm-forth out.o)
+target_link_libraries(llvm-forth ${llvm_libs})
