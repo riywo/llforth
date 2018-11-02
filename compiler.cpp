@@ -117,30 +117,7 @@ static void InitializePrint() {
     Builder.CreateRetVoid();
 }
 
-static void Initialize() {
-    TheModule = make_unique<Module>("main", TheContext);
-    MainFunc = Function::Create(FunctionType::get(IntType, false), Function::ExternalLinkage, "main", TheModule.get());
-    Entry = BasicBlock::Create(TheContext, "entry", MainFunc);
-    Next = BasicBlock::Create(TheContext, "next", MainFunc);
-
-    NodeType->setBody(
-            NodePtrType,    // Previous node
-            StrType,        // Word of node
-            AddressType,    // Execution token (BlockAddress)
-            NodePtrPtrType, // Array of nodes if colon word
-            IntType         // Integer if lit
-    );
-
-    InitializePrint();
-
-    Builder.SetInsertPoint(Entry);
-    pc = Builder.CreateAlloca(NodePtrPtrType, nullptr, "pc");
-    w = Builder.CreateAlloca(NodePtrPtrType, nullptr, "w");
-    sp = Builder.CreateAlloca(IntType, nullptr, "sp");
-    Builder.CreateStore(GetInt(0), sp);
-    auto stack_type = ArrayType::get(IntType, 1024);
-    stack = CreateGlobalVariable("stack", stack_type, UndefValue::get(stack_type), false);
-
+static void InitializeNativeWords() {
     AddNativeWord("bye", [](){
         Builder.CreateRet(GetInt(0));
     });
@@ -182,6 +159,33 @@ static void Initialize() {
         Push(value);
         Builder.CreateBr(Next);
     });
+}
+
+static void Initialize() {
+    TheModule = make_unique<Module>("main", TheContext);
+    MainFunc = Function::Create(FunctionType::get(IntType, false), Function::ExternalLinkage, "main", TheModule.get());
+    Entry = BasicBlock::Create(TheContext, "entry", MainFunc);
+    Next = BasicBlock::Create(TheContext, "next", MainFunc);
+
+    NodeType->setBody(
+            NodePtrType,    // Previous node
+            StrType,        // Word of node
+            AddressType,    // Execution token (BlockAddress)
+            NodePtrPtrType, // Array of nodes if colon word
+            IntType         // Integer if lit
+    );
+
+    InitializePrint();
+
+    Builder.SetInsertPoint(Entry);
+    pc = Builder.CreateAlloca(NodePtrPtrType, nullptr, "pc");
+    w = Builder.CreateAlloca(NodePtrPtrType, nullptr, "w");
+    sp = Builder.CreateAlloca(IntType, nullptr, "sp");
+    Builder.CreateStore(GetInt(0), sp);
+    auto stack_type = ArrayType::get(IntType, 1024);
+    stack = CreateGlobalVariable("stack", stack_type, UndefValue::get(stack_type), false);
+
+    InitializeNativeWords();
 }
 
 static std::vector<Constant*> MainLoop() {
