@@ -10,6 +10,15 @@ add_definitions(${LLVM_DEFINITIONS})
 
 llvm_map_components_to_libnames(llvm_libs core)
 
+add_executable(main main.cpp)
+target_link_libraries(main ${llvm_libs})
+
+add_executable(util util.cpp)
+target_link_libraries(util ${llvm_libs})
+
+add_executable(dict dict.cpp)
+target_link_libraries(dict ${llvm_libs})
+
 add_executable(compiler compiler.cpp)
 target_link_libraries(compiler ${llvm_libs})
 add_custom_command(
