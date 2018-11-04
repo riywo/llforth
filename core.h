@@ -25,19 +25,10 @@ namespace core {
 
     const static auto IntType = Builder.getInt32Ty();
     const static auto StrType = Builder.getInt8PtrTy();
-    const static auto AddressType = Builder.getInt8PtrTy();
-    const static auto XTType = AddressType->getPointerTo();
-    const static auto XTPtrType = XTType->getPointerTo();
-
-    static Function* MainFunction;
 
     struct Func {
         std::string name;
         FunctionType* type;
-    };
-
-    const static Func MainFunc = {
-            "main", FunctionType::get(IntType, false)
     };
 
     static ConstantInt* GetInt(uint64_t value) {
@@ -82,7 +73,7 @@ namespace core {
     }
 
     static CallInst* CallFunction(const Func& func, ArrayRef<Value*> args) {
-        auto callee = CreateFunction(func);
+        auto callee = cast<Function>(TheModule->getOrInsertFunction(func.name, func.type));
         return Builder.CreateCall(callee, args);
     }
 }
