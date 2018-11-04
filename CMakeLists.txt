@@ -22,14 +22,3 @@ add_custom_command(
         COMMAND cat main.ll
         COMMAND ${LLVM_TOOLS_BINARY_DIR}/llc -filetype=obj main.ll
 )
-
-add_executable(compiler compiler.cpp)
-target_link_libraries(compiler ${llvm_libs})
-#add_custom_command(
-#        OUTPUT out.ll out.o
-#        DEPENDS compiler test.forth
-#        COMMAND cat ../test.forth | $<TARGET_FILE:compiler> > out.ll
-#        COMMAND cat out.ll
-#        COMMAND ${LLVM_TOOLS_BINARY_DIR}/llc -filetype=obj out.ll
-#)
-
