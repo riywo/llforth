@@ -3,14 +3,16 @@
 //
 
 #include "engine.h"
+#include "dict.h"
 #include "words.h"
+#include "stack.h"
 
 static std::vector<Constant*> MainLoop() {
     std::string token;
     auto code = std::vector<Constant*>();
     while (std::cin >> token) {
-        auto found = engine::Dictionary.find(token);
-        if (found == engine::Dictionary.end()) {
+        auto found = dict::Dictionary.find(token);
+        if (found == dict::Dictionary.end()) {
             throw "unknown";
         } else {
             auto word = found->second;
@@ -26,8 +28,15 @@ static std::vector<Constant*> MainLoop() {
 
 int main() {
     core::CreateModule("main");
+    engine::Initializers = {
+            dict::Initialize,
+            stack::Initialize,
+            words::Initialize,
+    };
+    engine::Finalizers = {
+            dict::Finalize,
+    };
     engine::Initialize();
-    words::Initialize();
     auto code = MainLoop();
     engine::Finalize(code);
     core::Dump();

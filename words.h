@@ -6,51 +6,61 @@
 #define LLVM_FORTH_WORD_H
 
 #include "engine.h"
+#include "dict.h"
+#include "stack.h"
 #include "util.h"
 
 namespace words {
-    static engine::Word Lit;
-    static engine::Word Dot;
-    static engine::Word Bye;
-    static engine::Word Docol;
-    static engine::Word Exit;
+    static dict::Word Lit;
+    static dict::Word Dot;
+    static dict::Word Bye;
+    static dict::Word Docol;
+    static dict::Word Exit;
 
-    static bool IsLitWord(engine::Word word) {
+    static bool IsLitWord(dict::Word word) {
         return word.xt == Lit.xt;
     };
 
-    static engine::Word CreateLitWord(const std::string& value) {
-        return engine::AddCompileWord(value, Lit.addr, std::stoi(value));
+    static dict::Word CreateLitWord(const std::string& value) {
+        return dict::AddCompileWord(value, Lit.addr, std::stoi(value));
     };
 
-    static void Initialize() {
+    static void CreateBrNext() {
+        core::Builder.CreateBr(engine::Next);
+    };
+
+    static void CreateRet(int ret) {
+        core::Builder.CreateRet(core::GetInt(ret));
+    };
+
+    static void Initialize(Function* main, BasicBlock* entry) {
         util::Initialize();
 
-        Bye = engine::AddNativeWord("bye", [](){
-            engine::CreateRet(0);
+        Bye = dict::AddNativeWord("bye", [](){
+            CreateRet(0);
         });
-        Dot = engine::AddNativeWord(".", [](){
-            auto value = engine::Pop();
+        Dot = dict::AddNativeWord(".", [](){
+            auto value = stack::Pop();
             core::CallFunction(util::PrintFunc, value);
-            engine::CreateBrNext();
+            CreateBrNext();
         });
-        Lit = engine::AddNativeWord("lit", [](){
-            auto value = engine::GetXtEmbedded();
-            engine::Push(value);
-            engine::CreateBrNext();
+        Lit = dict::AddNativeWord("lit", [](){
+            auto value = dict::GetXtEmbedded();
+            stack::Push(value);
+            CreateBrNext();
         });
-        Docol = engine::AddNativeWord("docol", [](){
-            engine::RPush(core::Builder.CreateLoad(engine::PC));
-            auto new_pc = engine::GetXtColon();
+        Docol = dict::AddNativeWord("docol", [](){
+            stack::RPush(core::Builder.CreateLoad(engine::PC));
+            auto new_pc = dict::GetXtColon();
             core::Builder.CreateStore(new_pc, engine::PC);
-            engine::CreateBrNext();
+            CreateBrNext();
         });
-        Exit = engine::AddNativeWord("exit", [](){
-            auto return_pc = engine::RPop();
+        Exit = dict::AddNativeWord("exit", [](){
+            auto return_pc = stack::RPop();
             core::Builder.CreateStore(return_pc, engine::PC);
-            engine::CreateBrNext();
+            CreateBrNext();
         });
-        engine::AddColonWord("foo", Docol.addr, {
+        dict::AddColonWord("foo", Docol.addr, {
             CreateLitWord("1").xt,
             Dot.xt,
             Exit.xt,
