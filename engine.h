@@ -25,7 +25,6 @@ namespace engine {
     const static auto XtType = CreateXtType();
     const static auto XtPtrType = XtType->getPointerTo();
     const static auto XtPtrPtrType = XtPtrType->getPointerTo();
-    const static auto XtPtrPtrPtrType = XtPtrPtrType->getPointerTo();
     static Constant* LastXt = ConstantPointerNull::get(XtPtrType);
     enum XtMember {
         XtPrevious, XtWord, XtAddress, XtColon, XtEmbedded
@@ -95,20 +94,12 @@ namespace engine {
     };
 
     static Value* GetXt() {
-        return core::Builder.CreateLoad(core::Builder.CreateLoad(W));
+        return core::Builder.CreateLoad(W);
     };
-
-    static Value* GetXtMemberPtr(XtMember member) {
-        return core::Builder.CreateGEP(GetXt(), {core::GetInt(0), core::GetInt(member)});
-    };
-    static Value* GetXtPreviousPtr() { return GetXtMemberPtr(XtPrevious); };
-    static Value* GetXtWordPtr()     { return GetXtMemberPtr(XtWord);     };
-    static Value* GetXtAddressPtr()  { return GetXtMemberPtr(XtAddress);  };
-    static Value* GetXtColonPtr()    { return GetXtMemberPtr(XtColon);    };
-    static Value* GetXtEmbeddedPtr() { return GetXtMemberPtr(XtEmbedded); };
 
     static Value* GetXtMember(XtMember member) {
-        return core::Builder.CreateLoad(GetXtMemberPtr(member));
+        auto ptr = core::Builder.CreateGEP(GetXt(), {core::GetInt(0), core::GetInt(member)});
+        return core::Builder.CreateLoad(ptr);
     };
     static Value* GetXtPrevious() { return GetXtMember(XtPrevious); };
     static Value* GetXtWord()     { return GetXtMember(XtWord);     };
@@ -162,7 +153,7 @@ namespace engine {
 
         core::Builder.SetInsertPoint(Entry);
         PC = core::Builder.CreateAlloca(XtPtrPtrType, nullptr, "pc");
-        W = core::Builder.CreateAlloca(XtPtrPtrType, nullptr, "w");
+        W = core::Builder.CreateAlloca(XtPtrType, nullptr, "w");
 
         auto stack_type = ArrayType::get(core::IntType, 1024);
         SP = core::Builder.CreateAlloca(core::IntType, nullptr, "sp");
@@ -185,7 +176,7 @@ namespace engine {
 
         core::Builder.SetInsertPoint(Next);
         auto pc = core::Builder.CreateLoad(PC);
-        core::Builder.CreateStore(pc, W);
+        core::Builder.CreateStore(core::Builder.CreateLoad(pc), W);
         auto new_pc = core::Builder.CreateGEP(pc, core::GetInt(1));
         core::Builder.CreateStore(new_pc, PC);
         auto br = core::Builder.CreateIndirectBr(GetXtAddress(), (unsigned int)NativeBlocks.size());

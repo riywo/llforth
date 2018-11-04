@@ -18,11 +18,10 @@ target_link_libraries(llvm-forth ${llvm_libs})
 add_custom_command(
         OUTPUT main.ll main.o
         DEPENDS main
-        COMMAND echo 'foo bye' | $<TARGET_FILE:main> > main.ll
+        COMMAND echo 'lit 2 foo . bye' | $<TARGET_FILE:main> > main.ll
         COMMAND cat main.ll
         COMMAND ${LLVM_TOOLS_BINARY_DIR}/llc -filetype=obj main.ll
 )
-
 
 add_executable(compiler compiler.cpp)
 target_link_libraries(compiler ${llvm_libs})

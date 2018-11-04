@@ -11,7 +11,7 @@ static std::vector<Constant*> MainLoop() {
     while (std::cin >> token) {
         auto found = engine::Dictionary.find(token);
         if (found == engine::Dictionary.end()) {
-            throw "UNKNOWN";
+            throw "unknown";
         } else {
             auto word = found->second;
             if (words::IsLitWord(word)) {
