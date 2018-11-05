@@ -6,6 +6,8 @@
 #define LLVM_FORTH_CORE_H
 
 #include <iostream>
+#include <fstream>
+#include <sstream>
 #include <string>
 #include <functional>
 #include <llvm/IR/LLVMContext.h>

@@ -13,12 +13,16 @@ llvm_map_components_to_libnames(llvm_libs core)
 add_executable(llforthc compiler.cpp)
 target_link_libraries(llforthc ${llvm_libs})
 
+add_custom_target(test
+        COMMAND lit --path ${LLVM_TOOLS_BINARY_DIR} --path $<TARGET_FILE_DIR:llforthc> ../test
+        DEPENDS llforthc
+)
+
 add_executable(llforth llforth.o)
 target_link_libraries(llforth ${llvm_libs})
 add_custom_command(
         OUTPUT llfoth.ll llforth.o
-        DEPENDS llforthc interpreter.forth
-        COMMAND cat ../interpreter.forth | $<TARGET_FILE:llforthc> > llforth.ll
-        COMMAND cat llforth.ll
+        DEPENDS llforthc interpreter.forth test
+        COMMAND $<TARGET_FILE:llforthc> ../interpreter.forth > llforth.ll
         COMMAND ${LLVM_TOOLS_BINARY_DIR}/llc -filetype=obj llforth.ll
 )
