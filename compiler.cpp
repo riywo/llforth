@@ -36,5 +36,5 @@ int main() {
     engine::Initialize();
     auto code = MainLoop();
     engine::Finalize(code);
-    core::Dump();
+    core::DumpModule();
 }

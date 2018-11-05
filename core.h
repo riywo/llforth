@@ -39,7 +39,7 @@ namespace core {
         TheModule = llvm::make_unique<Module>(name, TheContext);
     }
 
-    static void Dump() {
+    static void DumpModule() {
         TheModule->print(outs(), nullptr);
     }
 
