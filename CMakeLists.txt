@@ -10,15 +10,15 @@ add_definitions(${LLVM_DEFINITIONS})
 
 llvm_map_components_to_libnames(llvm_libs core)
 
-add_executable(main main.cpp)
-target_link_libraries(main ${llvm_libs})
+add_executable(llforthc compiler.cpp)
+target_link_libraries(llforthc ${llvm_libs})
 
-add_executable(llvm-forth main.o)
-target_link_libraries(llvm-forth ${llvm_libs})
+add_executable(llforth llforth.o)
+target_link_libraries(llforth ${llvm_libs})
 add_custom_command(
-        OUTPUT main.ll main.o
-        DEPENDS main
-        COMMAND echo 'lit 2 foo . bye' | $<TARGET_FILE:main> > main.ll
-        COMMAND cat main.ll
-        COMMAND ${LLVM_TOOLS_BINARY_DIR}/llc -filetype=obj main.ll
+        OUTPUT llfoth.ll llforth.o
+        DEPENDS llforthc interpreter.forth
+        COMMAND cat ../interpreter.forth | $<TARGET_FILE:llforthc> > llforth.ll
+        COMMAND cat llforth.ll
+        COMMAND ${LLVM_TOOLS_BINARY_DIR}/llc -filetype=obj llforth.ll
 )

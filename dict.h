@@ -15,12 +15,12 @@ namespace dict {
         auto xt_ptr_type = xt_type->getPointerTo();
         auto xt_ptr_ptr_type = xt_ptr_type->getPointerTo();
         xt_type->setBody({
-                                 xt_ptr_type,     // Previous word
-                                 core::StrType,   // Word of node
-                                 AddressType,     // Implementation address
-                                 xt_ptr_ptr_type, // Array of xt if colon word
-                                 core::IntType,   // Embedded integer for lit and branch
-                         });
+            xt_ptr_type,     // Previous word
+            core::StrType,   // Word of node
+            AddressType,     // Implementation address
+            xt_ptr_ptr_type, // Array of xt if colon word
+            core::IntType,   // Embedded integer for lit and branch
+        });
         return xt_type;
     };
     const static auto XtType = CreateXtType();

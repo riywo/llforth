@@ -45,8 +45,6 @@ namespace stack {
     }
 
     static void Initialize(Function* main, BasicBlock* entry) {
-        core::Builder.SetInsertPoint(entry);
-
         SP = core::Builder.CreateAlloca(core::IntType, nullptr, "sp");
         core::Builder.CreateStore(core::GetInt(0), SP);
         auto stack_type = ArrayType::get(core::IntType, 1024);

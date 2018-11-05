@@ -11,17 +11,14 @@ static std::vector<Constant*> MainLoop() {
     std::string token;
     auto code = std::vector<Constant*>();
     while (std::cin >> token) {
+        dict::Word word = {};
         auto found = dict::Dictionary.find(token);
         if (found == dict::Dictionary.end()) {
-            throw "unknown";
+            word = words::AddLitWord(token);
         } else {
-            auto word = found->second;
-            if (words::IsLitWord(word)) {
-                std::cin >> token;
-                word = words::CreateLitWord(token);
-            }
-            code.push_back(word.xt);
+            word = found->second;
         }
+        code.push_back(word.xt);
     }
     return code;
 }

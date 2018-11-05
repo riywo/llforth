@@ -17,11 +17,7 @@ namespace words {
     static dict::Word Docol;
     static dict::Word Exit;
 
-    static bool IsLitWord(dict::Word word) {
-        return word.xt == Lit.xt;
-    };
-
-    static dict::Word CreateLitWord(const std::string& value) {
+    static dict::Word AddLitWord(const std::string& value) {
         return dict::AddCompileWord(value, Lit.addr, std::stoi(value));
     };
 
@@ -44,6 +40,7 @@ namespace words {
             core::CallFunction(util::PrintFunc, value);
             CreateBrNext();
         });
+
         Lit = dict::AddNativeWord("lit", [](){
             auto value = dict::GetXtEmbedded();
             stack::Push(value);
@@ -61,7 +58,7 @@ namespace words {
             CreateBrNext();
         });
         dict::AddColonWord("foo", Docol.addr, {
-            CreateLitWord("1").xt,
+            AddLitWord("1").xt,
             Dot.xt,
             Exit.xt,
         });
