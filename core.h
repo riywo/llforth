@@ -64,6 +64,22 @@ namespace core {
         return g;
     }
 
+    static Constant* CreateGlobalArrayVariable(const std::string& name, Type* elem_type, uint64_t size, ArrayRef<Constant*> initial, bool isConstant) {
+        auto type = ArrayType::get(elem_type, size);
+        if (initial.equals(nullptr)) {
+            initial = UndefValue::get(type);
+        }
+        return CreateGlobalVariable(name, type, ConstantArray::get(type, initial), isConstant);
+    };
+
+    static Constant* CreateGlobalArrayVariable(const std::string& name, Type* elem_type, ArrayRef<Constant*> initial, bool isConstant=true) {
+        return CreateGlobalArrayVariable(name, elem_type, initial.size(), initial, isConstant);
+    }
+
+    static Constant* CreateGlobalArrayVariable(const std::string& name, Type* elem_type, uint64_t size, bool isConstant=true) {
+        return CreateGlobalArrayVariable(name, elem_type, size, nullptr, isConstant);
+    }
+
     static BasicBlock* CreateBasicBlock(const std::string& name, Function* function) {
         return BasicBlock::Create(TheContext, name, function);
     }
@@ -84,6 +100,7 @@ namespace core {
         auto callee = cast<Function>(TheModule->getOrInsertFunction(func.name, func.type));
         return Builder.CreateCall(callee, args);
     }
+
 }
 
 #endif //LLVM_FORTH_CORE_H

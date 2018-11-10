@@ -104,9 +104,8 @@ namespace dict {
     }
 
     static void Finalize(const std::vector<Constant*>& code) {
-        auto code_type = ArrayType::get(XtPtrType, code.size());
-        auto code_block = core::CreateGlobalVariable("code", code_type, ConstantArray::get(code_type, code));
-        auto start = core::Builder.CreateGEP(code_block, {core::GetIndex(0), core::GetIndex(0)});
+        auto code_array = core::CreateGlobalArrayVariable("code", XtPtrType, code);
+        auto start = core::Builder.CreateGEP(code_array, {core::GetIndex(0), core::GetIndex(0)});
         core::Builder.CreateStore(start, engine::PC);
 
         engine::Jump = [](){

@@ -47,13 +47,11 @@ namespace stack {
     static void Initialize(Function* main, BasicBlock* entry) {
         SP = core::Builder.CreateAlloca(core::IntType, nullptr, "sp");
         core::Builder.CreateStore(core::GetInt(0), SP);
-        auto stack_type = ArrayType::get(core::IntType, 1024);
-        Stack = core::CreateGlobalVariable("stack", stack_type, UndefValue::get(stack_type), false);
-
+        Stack = core::CreateGlobalArrayVariable("stack", core::IntType, 1024, false);
+        
         RSP = core::Builder.CreateAlloca(core::IntType, nullptr, "rsp");
         core::Builder.CreateStore(core::GetInt(0), RSP);
-        auto rstack_type = ArrayType::get(dict::XtPtrPtrType, 1024);
-        RStack = core::CreateGlobalVariable("rstack", rstack_type, UndefValue::get(rstack_type), false);
+        RStack = core::CreateGlobalArrayVariable("rstack", dict::XtPtrPtrType, 1024, false);
     }
 }
 
