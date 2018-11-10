@@ -16,7 +16,6 @@ static void MainLoop(std::istream& input, std::vector<Constant*>* code) {
             if (token == "\\") {
                 break;
             }
-
             dict::Word word = {};
             auto found = dict::Dictionary.find(token);
             if (found == dict::Dictionary.end()) {
@@ -42,8 +41,13 @@ int main(int argc, char* argv[]) {
     engine::Initialize();
     auto code = std::vector<Constant*>();
     if (argc > 1) {
-        std::ifstream file(argv[1]);
-        MainLoop(file, &code);
+        std::ifstream input(argv[1]);
+        if (input) {
+            MainLoop(input, &code);
+        } else {
+            std::cerr << "No such file: " << argv[1] << std::endl;
+            exit(1);
+        }
     } else {
         MainLoop(std::cin, &code);
     }

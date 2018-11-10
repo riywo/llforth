@@ -24,14 +24,14 @@ namespace stack {
     static LoadInst* Pop() {
         auto current_sp = core::Builder.CreateLoad(SP);
         auto top_sp = core::Builder.CreateSub(current_sp, core::GetInt(1));
-        auto addr = core::Builder.CreateGEP(Stack, {core::GetInt(0), top_sp});
+        auto addr = core::Builder.CreateGEP(Stack, {core::GetIndex(0), top_sp});
         core::Builder.CreateStore(top_sp, SP);
         return core::Builder.CreateLoad(addr);
     }
 
     static void RPush(Value* value) {
         auto current_rsp = core::Builder.CreateLoad(RSP);
-        auto addr = core::Builder.CreateGEP(RStack, {core::GetInt(0), current_rsp});
+        auto addr = core::Builder.CreateGEP(RStack, {core::GetIndex(0), current_rsp});
         core::Builder.CreateStore(value, addr);
         core::Builder.CreateStore(core::Builder.CreateAdd(current_rsp, core::GetInt(1)), RSP);
     }
@@ -39,7 +39,7 @@ namespace stack {
     static LoadInst* RPop() {
         auto current_rsp = core::Builder.CreateLoad(RSP);
         auto top_rsp = core::Builder.CreateSub(current_rsp, core::GetInt(1));
-        auto addr = core::Builder.CreateGEP(RStack, {core::GetInt(0), top_rsp});
+        auto addr = core::Builder.CreateGEP(RStack, {core::GetIndex(0), top_rsp});
         core::Builder.CreateStore(top_rsp, RSP);
         return core::Builder.CreateLoad(addr);
     }

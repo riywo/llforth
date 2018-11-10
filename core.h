@@ -17,6 +17,7 @@
 #include <llvm/IR/Type.h>
 #include <llvm/IR/Verifier.h>
 #include <llvm/Support/raw_ostream.h>
+#include <llvm/Support/MemoryBuffer.h>
 
 using namespace llvm;
 
@@ -25,8 +26,9 @@ namespace core {
     static IRBuilder<> Builder(TheContext);
     static std::unique_ptr<Module> TheModule;
 
-    const static auto IntType = Builder.getInt32Ty();
-    const static auto StrType = Builder.getInt8PtrTy();
+    const static auto IntType = Builder.getInt64Ty();
+    const static auto CharType = Builder.getInt8Ty();
+    const static auto StrType = CharType->getPointerTo();
 
     struct Func {
         std::string name;
@@ -35,6 +37,10 @@ namespace core {
 
     static ConstantInt* GetInt(uint64_t value) {
         return ConstantInt::get(IntType, value);
+    }
+
+    static ConstantInt* GetIndex(uint64_t value) {
+        return ConstantInt::get(Builder.getInt32Ty(), value);
     }
 
     static void CreateModule(const std::string& name) {

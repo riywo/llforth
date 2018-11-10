@@ -77,7 +77,7 @@ namespace dict {
         auto str = core::Builder.CreateGlobalStringPtr(word, "w_" + word);
         auto words_type = ArrayType::get(XtPtrType, words.size());
         auto words_block = core::CreateGlobalVariable("col_" + word, words_type, ConstantArray::get(words_type, words));
-        Constant* idx[] = {core::GetInt(0), core::GetInt(0)};
+        Constant* idx[] = {core::GetIndex(0), core::GetIndex(0)};
         auto xts = ConstantExpr::getGetElementPtr(words_type, words_block, idx);
         auto xt = AddXt(word, LastXt, str, addr, xts, nullptr);
         LastXt = xt;
@@ -89,7 +89,7 @@ namespace dict {
     };
 
     static Value* GetXtMember(XtMember member) {
-        auto ptr = core::Builder.CreateGEP(GetXt(), {core::GetInt(0), core::GetInt(member)});
+        auto ptr = core::Builder.CreateGEP(GetXt(), {core::GetIndex(0), core::GetIndex(member)});
         return core::Builder.CreateLoad(ptr);
     };
     static Value* GetXtPrevious()    { return GetXtMember(XtPrevious);    };
@@ -106,7 +106,7 @@ namespace dict {
     static void Finalize(const std::vector<Constant*>& code) {
         auto code_type = ArrayType::get(XtPtrType, code.size());
         auto code_block = core::CreateGlobalVariable("code", code_type, ConstantArray::get(code_type, code));
-        auto start = core::Builder.CreateGEP(code_block, {core::GetInt(0), core::GetInt(0)});
+        auto start = core::Builder.CreateGEP(code_block, {core::GetIndex(0), core::GetIndex(0)});
         core::Builder.CreateStore(start, engine::PC);
 
         engine::Jump = [](){

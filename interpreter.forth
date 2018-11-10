@@ -1,1 +1,3 @@
-1 2 . foo . bye
+1 2 . foo .
+inbuf word inbuf prints
+bye

@@ -1,4 +1,3 @@
-import lit.util
 import lit.formats
 
 config.name = "llforthc"
