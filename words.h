@@ -34,10 +34,7 @@ namespace words {
     static void Initialize(Function* main, BasicBlock* entry) {
         util::Initialize();
 
-        auto inbuf_type = ArrayType::get(core::CharType, 1024);
-        auto _inbuf = core::CreateGlobalVariable("_inbuf", inbuf_type, UndefValue::get(inbuf_type), false);
-        Constant* idx[] = {core::GetIndex(0), core::GetIndex(0)};
-        Inbuf = core::CreateGlobalVariable("inbuf", core::StrType, ConstantExpr::getGetElementPtr(inbuf_type, _inbuf, idx));
+        Inbuf = core::CreateGlobalArrayVariable("inbuf", core::CharType, 1024, false);
 
         Bye = dict::AddNativeWord("bye", [](){
             CreateRet(0);
@@ -65,7 +62,7 @@ namespace words {
             CreateBrNext();
         });
         dict::AddNativeWord("inbuf", [](){
-            auto inbuf = core::Builder.CreateLoad(Inbuf);
+            auto inbuf = core::Builder.CreateGEP(Inbuf, {core::GetIndex(0), core::GetIndex(0)});
             stack::Push(core::Builder.CreatePtrToInt(inbuf, core::IntType));
             CreateBrNext();
         });

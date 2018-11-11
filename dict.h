@@ -75,10 +75,8 @@ namespace dict {
 
     static Word AddColonWord(const std::string& word, BlockAddress* addr, const std::vector<Constant*>& words) {
         auto str = core::Builder.CreateGlobalStringPtr(word, "w_" + word);
-        auto words_type = ArrayType::get(XtPtrType, words.size());
-        auto words_block = core::CreateGlobalVariable("col_" + word, words_type, ConstantArray::get(words_type, words));
-        Constant* idx[] = {core::GetIndex(0), core::GetIndex(0)};
-        auto xts = ConstantExpr::getGetElementPtr(words_type, words_block, idx);
+        auto words_array = core::CreateGlobalArrayVariable("col_" + word, XtPtrType, words);
+        auto xts = core::CreateConstantGEP(words_array);
         auto xt = AddXt(word, LastXt, str, addr, xts, nullptr);
         LastXt = xt;
         return AddWord(word, xt, addr);

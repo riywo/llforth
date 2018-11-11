@@ -80,6 +80,12 @@ namespace core {
         return CreateGlobalArrayVariable(name, elem_type, size, nullptr, isConstant);
     }
 
+    static Constant* CreateConstantGEP(Constant* constant) {
+        auto type = constant->getType()->getPointerElementType();
+        Constant* idx[] = {core::GetIndex(0), core::GetIndex(0)};
+        return ConstantExpr::getGetElementPtr(type, constant, idx);
+    }
+
     static BasicBlock* CreateBasicBlock(const std::string& name, Function* function) {
         return BasicBlock::Create(TheContext, name, function);
     }
