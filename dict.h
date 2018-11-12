@@ -26,7 +26,9 @@ namespace dict {
     const static auto XtType = CreateXtType();
     const static auto XtPtrType = XtType->getPointerTo();
     const static auto XtPtrPtrType = XtPtrType->getPointerTo();
-    static Constant* LastXt = ConstantPointerNull::get(XtPtrType);
+    const static auto XtPtrNull = ConstantPointerNull::get(XtPtrType);
+    static Constant* _LastXt = XtPtrNull;
+    static Constant* LastXt;
     enum XtMember {
         XtPrevious, XtWord, XtImplAddress, XtColon, XtEmbedded
     };
@@ -63,13 +65,13 @@ namespace dict {
 
     static Word AddNativeWord(const std::string& word, const std::function<void()>& impl) {
         auto block = core::CreateBasicBlock("i_" + word, engine::MainFunction);
-        NativeBlocks.push_back(block);
         core::Builder.SetInsertPoint(block);
         impl();
+        NativeBlocks.push_back(block);
         auto addr = BlockAddress::get(block);
         auto str = core::Builder.CreateGlobalStringPtr(word, "w_" + word);
-        auto xt = AddXt(word, LastXt, str, addr, nullptr, nullptr);
-        LastXt = xt;
+        auto xt = AddXt(word, _LastXt, str, addr, nullptr, nullptr);
+        _LastXt = xt;
         return AddWord(word, xt, addr);
     };
 
@@ -77,8 +79,8 @@ namespace dict {
         auto str = core::Builder.CreateGlobalStringPtr(word, "w_" + word);
         auto words_array = core::CreateGlobalArrayVariable("col_" + word, XtPtrType, words);
         auto xts = core::CreateConstantGEP(words_array);
-        auto xt = AddXt(word, LastXt, str, addr, xts, nullptr);
-        LastXt = xt;
+        auto xt = AddXt(word, _LastXt, str, addr, xts, nullptr);
+        _LastXt = xt;
         return AddWord(word, xt, addr);
     };
 
@@ -93,28 +95,38 @@ namespace dict {
     static Value* GetXtMember(XtMember member) {
         return GetXtMember(GetXt(), member);
     };
+    static Value* GetXtPrevious(Value* xt)    { return GetXtMember(xt, XtPrevious);    };
+    static Value* GetXtWord(Value* xt)        { return GetXtMember(xt, XtWord);        };
+    static Value* GetXtImplAddress(Value* xt) { return GetXtMember(xt, XtImplAddress); };
+    static Value* GetXtColon(Value* xt)       { return GetXtMember(xt, XtColon);       };
+    static Value* GetXtEmbedded(Value* xt)    { return GetXtMember(xt, XtEmbedded);    };
     static Value* GetXtPrevious()    { return GetXtMember(XtPrevious);    };
     static Value* GetXtWord()        { return GetXtMember(XtWord);        };
     static Value* GetXtImplAddress() { return GetXtMember(XtImplAddress); };
     static Value* GetXtColon()       { return GetXtMember(XtColon);       };
     static Value* GetXtEmbedded()    { return GetXtMember(XtEmbedded);    };
 
+    static Value* GetLastXt() {
+        return core::Builder.CreateLoad(LastXt);
+    };
+
     static void Initialize(Function* main, BasicBlock* entry) {
         engine::PC = core::Builder.CreateAlloca(XtPtrPtrType, nullptr, "pc");
         engine::W = core::Builder.CreateAlloca(XtPtrType, nullptr, "w");
-    }
-
-    static void Finalize(const std::vector<Constant*>& code) {
-        auto code_array = core::CreateGlobalArrayVariable("code", XtPtrType, code);
-        auto start = core::Builder.CreateGEP(code_array, {core::GetIndex(0), core::GetIndex(0)});
-        core::Builder.CreateStore(start, engine::PC);
-
+        LastXt = core::CreateGlobalVariable("last_xt", XtPtrType);
         engine::Jump = [](){
             auto br = core::Builder.CreateIndirectBr(GetXtImplAddress(), (unsigned int)NativeBlocks.size());
             for (auto block : NativeBlocks) {
                 br->addDestination(block);
             }
         };
+    }
+
+    static void Finalize(const std::vector<Constant*>& code) {
+        auto code_array = core::CreateGlobalArrayVariable("code", XtPtrType, code);
+        auto start = core::Builder.CreateGEP(code_array, {core::GetIndex(0), core::GetIndex(0)});
+        core::Builder.CreateStore(start, engine::PC);
+        LastXt = core::CreateGlobalVariable("last_xt", XtPtrType, _LastXt, false);
     }
 }
 

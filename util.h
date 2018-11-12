@@ -10,6 +10,7 @@
 namespace util {
     auto NullChar = ConstantInt::get(core::CharType, 0);
 
+
     const static core::Func PrintIntFunc {
         "print_int", FunctionType::get(core::VoidType, {core::IntType}, false)
     };
@@ -18,6 +19,12 @@ namespace util {
     };
     const static core::Func ReadWordFunc {
         "read_word", FunctionType::get(core::IntType, {core::StrType}, false)
+    };
+    const static core::Func FindXtFunc {
+        "find_xt", FunctionType::get(dict::XtPtrType, {core::StrType}, false)
+    };
+    const static core::Func StringEqualFunc {
+        "string_equal", FunctionType::get(core::BoolType, {core::StrType, core::StrType}, false)
     };
     const static core::Func SkipCommentFunc {
         "skip_comment", FunctionType::get(core::VoidType, {}, false)
@@ -67,6 +74,72 @@ namespace util {
             core::Builder.SetInsertPoint(end);
             core::Builder.CreateStore(NullChar, core::Builder.CreateGEP(arg, index));
             core::Builder.CreateRet(index);
+        });
+        core::CreateFunction(StringEqualFunc, [=](Function* f, BasicBlock* entry) {
+            auto args = f->arg_begin();
+            auto a_str = args++;
+            auto b_str = args++;
+            auto loop = core::CreateBasicBlock("loop", f);
+            auto check_null = core::CreateBasicBlock("check_null", f);
+            auto loop_continue = core::CreateBasicBlock("loop_continue", f);
+            auto match = core::CreateBasicBlock("match", f);
+            auto not_match = core::CreateBasicBlock("not_match", f);
+            core::Builder.CreateBr(loop);
+
+            core::Builder.SetInsertPoint(loop);
+            auto index = core::Builder.CreatePHI(core::IntType, 2);
+            index->addIncoming(core::GetInt(0), entry);
+            auto a_char = core::Builder.CreateLoad(core::Builder.CreateGEP(a_str, index));
+            auto b_char = core::Builder.CreateLoad(core::Builder.CreateGEP(b_str, index));
+            auto is_match = core::Builder.CreateICmpEQ(a_char, b_char);
+            core::Builder.CreateCondBr(is_match, check_null, not_match);
+
+            core::Builder.SetInsertPoint(check_null);
+            auto is_null = core::Builder.CreateICmpEQ(a_char, core::GetChar(0));
+            core::Builder.CreateCondBr(is_null, match, loop_continue);
+
+            core::Builder.SetInsertPoint(loop_continue);
+            auto next_index = core::Builder.CreateAdd(index, core::GetInt(1));
+            index->addIncoming(next_index, loop_continue);
+            core::Builder.CreateBr(loop);
+
+            core::Builder.SetInsertPoint(match);
+            core::Builder.CreateRet(core::Builder.getInt1(true));
+
+            core::Builder.SetInsertPoint(not_match);
+            core::Builder.CreateRet(core::Builder.getInt1(false));
+        });
+        core::CreateFunction(FindXtFunc, [=](Function* f, BasicBlock* entry){
+            auto arg = f->arg_begin();
+            auto loop = core::CreateBasicBlock("loop", f);
+            auto check_word = core::CreateBasicBlock("check_word", f);
+            auto loop_continue = core::CreateBasicBlock("loop_continue", f);
+            auto end = core::CreateBasicBlock("end", f);
+            auto not_found = core::CreateBasicBlock("not_found", f);
+            auto last_xt = dict::GetLastXt();
+            core::Builder.CreateBr(loop);
+
+            core::Builder.SetInsertPoint(loop);
+            auto xt = core::Builder.CreatePHI(dict::XtPtrType, 2);
+            xt->addIncoming(last_xt, entry);
+            auto is_null = core::Builder.CreateICmpEQ(core::Builder.CreatePtrToInt(xt, core::IntType), core::GetInt(0));
+            core::Builder.CreateCondBr(is_null, not_found, check_word);
+
+            core::Builder.SetInsertPoint(check_word);
+            auto word = dict::GetXtWord(xt);
+            auto is_equal = core::CallFunction(StringEqualFunc, {arg, word});
+            core::Builder.CreateCondBr(is_equal, end, loop_continue);
+
+            core::Builder.SetInsertPoint(loop_continue);
+            auto next_xt = dict::GetXtPrevious(xt);
+            xt->addIncoming(next_xt, loop_continue);
+            core::Builder.CreateBr(loop);
+
+            core::Builder.SetInsertPoint(end);
+            core::Builder.CreateRet(xt);
+
+            core::Builder.SetInsertPoint(not_found);
+            core::Builder.CreateRet(dict::XtPtrNull);
         });
         core::CreateFunction(SkipCommentFunc, [=](Function* f, BasicBlock* entry) {
             auto loop = core::CreateBasicBlock("loop", f);

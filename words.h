@@ -78,12 +78,18 @@ namespace words {
         });
         dict::AddNativeWord("find", [](){
             auto str = core::Builder.CreateIntToPtr(stack::Pop(), core::StrType);
-
+            auto found = core::CallFunction(util::FindXtFunc, str);
+            stack::Push(core::Builder.CreatePtrToInt(found, core::IntType));
             CreateBrNext();
         });
         dict::AddNativeWord("\\", [](){
             core::CallFunction(util::SkipCommentFunc);
             CreateBrNext();
+        });
+        dict::AddNativeWord("execute", [](){ // This definition must be the last
+            auto xt = core::Builder.CreateIntToPtr(stack::Pop(), dict::XtPtrType);
+            core::Builder.CreateStore(xt, engine::W);
+            engine::Jump();
         });
         dict::AddColonWord("foo", Docol.addr, {
             AddLitWord("1").xt,
