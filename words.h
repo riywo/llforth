@@ -76,6 +76,15 @@ namespace words {
             core::CallFunction(util::PrintStrFunc, str);
             CreateBrNext();
         });
+        dict::AddNativeWord("find", [](){
+            auto str = core::Builder.CreateIntToPtr(stack::Pop(), core::StrType);
+
+            CreateBrNext();
+        });
+        dict::AddNativeWord("\\", [](){
+            core::CallFunction(util::SkipCommentFunc);
+            CreateBrNext();
+        });
         dict::AddColonWord("foo", Docol.addr, {
             AddLitWord("1").xt,
             Dot.xt,

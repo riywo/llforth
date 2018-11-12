@@ -1,2 +1,2 @@
 cmake-build-debug/
-test/Output
+test/*/Output

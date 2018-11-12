@@ -86,9 +86,12 @@ namespace dict {
         return core::Builder.CreateLoad(engine::W);
     };
 
-    static Value* GetXtMember(XtMember member) {
-        auto ptr = core::Builder.CreateGEP(GetXt(), {core::GetIndex(0), core::GetIndex(member)});
+    static Value* GetXtMember(Value* xt, XtMember member) {
+        auto ptr = core::Builder.CreateGEP(xt, {core::GetIndex(0), core::GetIndex(member)});
         return core::Builder.CreateLoad(ptr);
+    };
+    static Value* GetXtMember(XtMember member) {
+        return GetXtMember(GetXt(), member);
     };
     static Value* GetXtPrevious()    { return GetXtMember(XtPrevious);    };
     static Value* GetXtWord()        { return GetXtMember(XtWord);        };

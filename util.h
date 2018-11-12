@@ -11,15 +11,16 @@ namespace util {
     auto NullChar = ConstantInt::get(core::CharType, 0);
 
     const static core::Func PrintIntFunc {
-        "print_int", FunctionType::get(core::Builder.getVoidTy(), {core::IntType}, false)
+        "print_int", FunctionType::get(core::VoidType, {core::IntType}, false)
     };
-
     const static core::Func PrintStrFunc {
-        "print_str", FunctionType::get(core::Builder.getVoidTy(), {core::StrType}, false)
+        "print_str", FunctionType::get(core::VoidType, {core::StrType}, false)
     };
-
     const static core::Func ReadWordFunc {
         "read_word", FunctionType::get(core::IntType, {core::StrType}, false)
+    };
+    const static core::Func SkipCommentFunc {
+        "skip_comment", FunctionType::get(core::VoidType, {}, false)
     };
 
     static void Initialize() {
@@ -44,7 +45,7 @@ namespace util {
         core::CreateFunction(ReadWordFunc, [=](Function* f, BasicBlock* entry) {
             auto arg = f->arg_begin();
             auto loop = core::CreateBasicBlock("loop", f);
-            auto loop_continue = core::CreateBasicBlock("continue", f);
+            auto loop_continue = core::CreateBasicBlock("loop_continue", f);
             auto end = core::CreateBasicBlock("end", f);
             core::Builder.CreateBr(loop);
 
@@ -55,6 +56,7 @@ namespace util {
             auto c_switch = core::Builder.CreateSwitch(c, loop_continue);
             c_switch->addCase(core::GetChar(' '), end);
             c_switch->addCase(core::GetChar('\n'), end);
+            c_switch->addCase(core::GetChar(-1), end);
 
             core::Builder.SetInsertPoint(loop_continue);
             core::Builder.CreateStore(c, core::Builder.CreateGEP(arg, index));
@@ -65,6 +67,20 @@ namespace util {
             core::Builder.SetInsertPoint(end);
             core::Builder.CreateStore(NullChar, core::Builder.CreateGEP(arg, index));
             core::Builder.CreateRet(index);
+        });
+        core::CreateFunction(SkipCommentFunc, [=](Function* f, BasicBlock* entry) {
+            auto loop = core::CreateBasicBlock("loop", f);
+            auto end = core::CreateBasicBlock("end", f);
+            core::Builder.CreateBr(loop);
+
+            core::Builder.SetInsertPoint(loop);
+            auto c = core::CallFunction(getchar);
+            auto c_switch = core::Builder.CreateSwitch(c, loop);
+            c_switch->addCase(core::GetChar('\n'), end);
+            c_switch->addCase(core::GetChar(-1), end);
+
+            core::Builder.SetInsertPoint(end);
+            core::Builder.CreateRetVoid();
         });
     };
 }

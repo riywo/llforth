@@ -29,6 +29,7 @@ namespace core {
     const static auto IntType = Builder.getInt64Ty();
     const static auto CharType = Builder.getInt8Ty();
     const static auto StrType = CharType->getPointerTo();
+    const static auto VoidType = Builder.getVoidTy();
 
     struct Func {
         std::string name;
