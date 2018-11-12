@@ -8,6 +8,8 @@
 #include "core.h"
 
 namespace util {
+    auto NullChar = ConstantInt::get(core::CharType, 0);
+
     const static core::Func PrintIntFunc {
         "print_int", FunctionType::get(core::Builder.getVoidTy(), {core::IntType}, false)
     };
@@ -27,25 +29,42 @@ namespace util {
         core::Func getchar = {
                 "getchar", FunctionType::get(core::CharType, {}, false)
         };
-        core::CreateFunction(PrintIntFunc, [=](Function* f){
+        core::CreateFunction(PrintIntFunc, [=](Function* f, BasicBlock* entry){
             auto arg = f->arg_begin();
             auto fmt = core::Builder.CreateGlobalStringPtr("%d ");
             core::CallFunction(printf, {fmt, arg});
             core::Builder.CreateRetVoid();
         });
-        core::CreateFunction(PrintStrFunc, [=](Function* f){
+        core::CreateFunction(PrintStrFunc, [=](Function* f, BasicBlock* entry){
             auto arg = f->arg_begin();
             auto fmt = core::Builder.CreateGlobalStringPtr("%s ");
             core::CallFunction(printf, {fmt, arg});
             core::Builder.CreateRetVoid();
         });
-        core::CreateFunction(ReadWordFunc, [=](Function* f) {
+        core::CreateFunction(ReadWordFunc, [=](Function* f, BasicBlock* entry) {
             auto arg = f->arg_begin();
-            auto c = core::CallFunction(getchar, {});
-            core::Builder.CreateStore(c, arg);
-            auto next = core::Builder.CreateGEP(arg, core::GetInt(1));
-            core::Builder.CreateStore(ConstantInt::get(core::CharType, 0), next);
-            core::Builder.CreateRet(core::GetInt(1));
+            auto loop = core::CreateBasicBlock("loop", f);
+            auto loop_continue = core::CreateBasicBlock("continue", f);
+            auto end = core::CreateBasicBlock("end", f);
+            core::Builder.CreateBr(loop);
+
+            core::Builder.SetInsertPoint(loop);
+            auto index = core::Builder.CreatePHI(core::IntType, 2);
+            index->addIncoming(core::GetInt(0), entry);
+            auto c = core::CallFunction(getchar);
+            auto c_switch = core::Builder.CreateSwitch(c, loop_continue);
+            c_switch->addCase(core::GetChar(' '), end);
+            c_switch->addCase(core::GetChar('\n'), end);
+
+            core::Builder.SetInsertPoint(loop_continue);
+            core::Builder.CreateStore(c, core::Builder.CreateGEP(arg, index));
+            auto next_index = core::Builder.CreateAdd(index, core::GetInt(1));
+            index->addIncoming(next_index, loop_continue);
+            core::Builder.CreateBr(loop);
+
+            core::Builder.SetInsertPoint(end);
+            core::Builder.CreateStore(NullChar, core::Builder.CreateGEP(arg, index));
+            core::Builder.CreateRet(index);
         });
     };
 }

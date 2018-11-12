@@ -43,6 +43,10 @@ namespace core {
         return ConstantInt::get(Builder.getInt32Ty(), value);
     }
 
+    static ConstantInt* GetChar(char value) {
+        return ConstantInt::get(CharType, (int)value);
+    }
+
     static void CreateModule(const std::string& name) {
         TheModule = llvm::make_unique<Module>(name, TheContext);
     }
@@ -94,15 +98,15 @@ namespace core {
         return Function::Create(func.type, Function::ExternalLinkage, func.name, TheModule.get());
     }
 
-    static Function* CreateFunction(const Func& func, const std::function<void(Function*)>& impl) {
+    static Function* CreateFunction(const Func& func, const std::function<void(Function*, BasicBlock*)>& impl) {
         auto f = CreateFunction(func);
         auto entry = CreateBasicBlock("entry", f);
         Builder.SetInsertPoint(entry);
-        impl(f);
+        impl(f, entry);
         return f;
     }
 
-    static CallInst* CallFunction(const Func& func, ArrayRef<Value*> args) {
+    static CallInst* CallFunction(const Func& func, ArrayRef<Value*> args={}) {
         auto callee = cast<Function>(TheModule->getOrInsertFunction(func.name, func.type));
         return Builder.CreateCall(callee, args);
     }
