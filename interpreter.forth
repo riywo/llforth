@@ -1,2 +1,9 @@
-1 2 . foo .
-bye
+.start:
+    inbuf word
+    branch0 .end
+    inbuf find
+    execute
+    branch .start
+
+.end:
+    bye

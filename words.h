@@ -12,6 +12,8 @@
 
 namespace words {
     static dict::Word Lit;
+    static dict::Word Branch;
+    static dict::Word Branch0;
     static dict::Word Dot;
     static dict::Word Bye;
     static dict::Word Docol;
@@ -21,6 +23,16 @@ namespace words {
 
     static dict::Word AddLitWord(const std::string& value) {
         return dict::AddCompileWord(value, Lit.addr, std::stoi(value));
+    };
+
+    static dict::Word AddBranchWord(int offset) {
+        std::string name = "branch=" + std::to_string(offset);
+        return dict::AddCompileWord(name, Branch.addr, offset);
+    };
+
+    static dict::Word AddBranch0Word(int offset) {
+        std::string name = "branch0=" + std::to_string(offset);
+        return dict::AddCompileWord(name, Branch0.addr, offset);
     };
 
     static void CreateBrNext() {
@@ -44,11 +56,22 @@ namespace words {
             core::CallFunction(util::PrintIntFunc, value);
             CreateBrNext();
         });
-
         Lit = dict::AddNativeWord("lit", [](){
             auto value = dict::GetXtEmbedded();
             stack::Push(value);
             CreateBrNext();
+        });
+        Branch = dict::AddNativeWord("branch", [](){
+            auto value = dict::GetXtEmbedded();
+            auto pc = core::Builder.CreateLoad(engine::PC);
+            auto new_pc = core::Builder.CreateGEP(pc, value);
+            core::Builder.CreateStore(new_pc, engine::PC);
+            CreateBrNext();
+        });
+        Branch0 = dict::AddNativeWord("branch0", [](){
+            auto tos = stack::Pop();
+            auto is_zero = core::Builder.CreateICmpEQ(tos, core::GetInt(0));
+            core::Builder.CreateCondBr(is_zero, Branch.block, engine::Next);
         });
         Docol = dict::AddNativeWord("docol", [](){
             stack::RPush(core::Builder.CreateLoad(engine::PC));
@@ -86,15 +109,15 @@ namespace words {
             core::CallFunction(util::SkipCommentFunc);
             CreateBrNext();
         });
-        dict::AddNativeWord("execute", [](){ // This definition must be the last
-            auto xt = core::Builder.CreateIntToPtr(stack::Pop(), dict::XtPtrType);
-            core::Builder.CreateStore(xt, engine::W);
-            engine::Jump();
-        });
         dict::AddColonWord("foo", Docol.addr, {
             AddLitWord("1").xt,
             Dot.xt,
             Exit.xt,
+        });
+        dict::AddNativeWord("execute", [](){ // This definition must be the last
+            auto xt = core::Builder.CreateIntToPtr(stack::Pop(), dict::XtPtrType);
+            core::Builder.CreateStore(xt, engine::W);
+            engine::Jump();
         });
     };
 }

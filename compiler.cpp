@@ -7,24 +7,87 @@
 #include "words.h"
 #include "stack.h"
 
+struct Token {
+    enum Type {Word, Branch, Branch0} type;
+    std::string value;
+};
+
+static std::string GetLabel(const std::string& str) {
+    std::smatch sm;
+    if (std::regex_match(str, sm, std::regex("(\\..+):"))) {
+        return sm[1];
+    } else {
+        return "";
+    }
+}
+
 static void MainLoop(std::istream& input, std::vector<Constant*>* code) {
     std::string line;
-    std::string token;
+    std::map<std::string, unsigned long> labels ={};
+    std::vector<Token> tokens = {};
     while (std::getline(input, line)) {
+        std::string str;
         std::stringstream linestream(line);
-        while (linestream >> token) {
-            if (token == "\\") {
+        while (linestream >> str) {
+            Token token = {};
+            if (str == "\\") {
+                break;
+            } else if (str == "branch") {
+                std::string goto_label;
+                linestream >> goto_label;
+                token = {Token::Type::Branch, goto_label};
+            } else if (str == "branch0") {
+                std::string goto_label;
+                linestream >> goto_label;
+                token = {Token::Type::Branch0, goto_label};
+            } else {
+                auto label = GetLabel(str);
+                if (label != "") {
+                    labels[label] = tokens.size();
+                    continue;
+                } else {
+                    token = {Token::Type::Word, str};
+                }
+            }
+            tokens.push_back(token);
+        }
+    }
+    for (auto token: tokens) {
+        dict::Word word = {};
+        switch (token.type) {
+            case Token::Type::Word: {
+                auto found = dict::Dictionary.find(token.value);
+                if (found == dict::Dictionary.end()) {
+                    word = words::AddLitWord(token.value);
+                } else {
+                    word = found->second;
+                }
                 break;
             }
-            dict::Word word = {};
-            auto found = dict::Dictionary.find(token);
-            if (found == dict::Dictionary.end()) {
-                word = words::AddLitWord(token);
-            } else {
-                word = found->second;
+            case Token::Type::Branch: {
+                auto found = labels.find(token.value);
+                if (found == labels.end()) {
+                    exit(1);
+                } else {
+                    int label_idx = (int)found->second;
+                    int offset = label_idx - (int)code->size() - 1;
+                    word = words::AddBranchWord(offset);
+                }
+                break;
             }
-            code->push_back(word.xt);
+            case Token::Type::Branch0: {
+                auto found = labels.find(token.value);
+                if (found == labels.end()) {
+                    exit(1);
+                } else {
+                    int label_idx = (int)found->second;
+                    int offset = label_idx - (int)code->size() - 1;
+                    word = words::AddBranch0Word(offset);
+                }
+                break;
+            }
         }
+        code->push_back(word.xt);
     }
 }
 

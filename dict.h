@@ -36,6 +36,7 @@ namespace dict {
     struct Word {
         Constant* xt;
         BlockAddress* addr;
+        BasicBlock* block;
     };
     static std::vector<BasicBlock*> NativeBlocks = {};
     static std::map<std::string, Word> Dictionary = {};
@@ -50,10 +51,11 @@ namespace dict {
         return core::CreateGlobalVariable("xt_" + word, XtType, value);
     };
 
-    static Word AddWord(const std::string& word, Constant* xt, BlockAddress* addr) {
+    static Word AddWord(const std::string& word, Constant* xt, BlockAddress* addr, BasicBlock* block=nullptr) {
         Word w;
         w.xt = xt;
         w.addr = addr;
+        w.block = block;
         Dictionary[word] = w;
         return w;
     };
@@ -72,7 +74,7 @@ namespace dict {
         auto str = core::Builder.CreateGlobalStringPtr(word, "w_" + word);
         auto xt = AddXt(word, _LastXt, str, addr, nullptr, nullptr);
         _LastXt = xt;
-        return AddWord(word, xt, addr);
+        return AddWord(word, xt, addr, block);
     };
 
     static Word AddColonWord(const std::string& word, BlockAddress* addr, const std::vector<Constant*>& words) {

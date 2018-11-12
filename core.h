@@ -9,6 +9,7 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <regex>
 #include <functional>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/IRBuilder.h>

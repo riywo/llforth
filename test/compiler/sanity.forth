@@ -1,6 +1,6 @@
 \ RUN: llforthc %s | lli | FileCheck %s
 
-1 .
+999999 .
 bye
 
-\ CHECK: 1
+\ CHECK: 999999
