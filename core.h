@@ -32,6 +32,7 @@ namespace core {
     const static auto StrType = CharType->getPointerTo();
     const static auto VoidType = Builder.getVoidTy();
     const static auto BoolType = Builder.getInt1Ty();
+    const static auto IndexType = Builder.getInt32Ty();
 
     struct Func {
         std::string name;
@@ -43,7 +44,7 @@ namespace core {
     }
 
     static ConstantInt* GetIndex(uint64_t value) {
-        return ConstantInt::get(Builder.getInt32Ty(), value);
+        return ConstantInt::get(IndexType, value);
     }
 
     static ConstantInt* GetChar(char value) {

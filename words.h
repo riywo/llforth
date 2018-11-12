@@ -56,6 +56,10 @@ namespace words {
             core::CallFunction(util::PrintIntFunc, value);
             CreateBrNext();
         });
+        dict::AddNativeWord("dup", [](){
+            stack::Dup();
+            CreateBrNext();
+        });
         Lit = dict::AddNativeWord("lit", [](){
             auto value = dict::GetXtEmbedded();
             stack::Push(value);
