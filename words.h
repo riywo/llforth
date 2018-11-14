@@ -14,6 +14,7 @@ namespace words {
     static dict::Word Lit;
     static dict::Word Branch;
     static dict::Word Branch0;
+    static dict::Word Throw;
     static dict::Word Dot;
     static dict::Word Bye;
     static dict::Word Docol;
@@ -50,6 +51,9 @@ namespace words {
 
         Bye = dict::AddNativeWord("bye", [](){
             CreateRet(0);
+        });
+        Throw = dict::AddNativeWord("throw", [](){
+            core::Builder.CreateRet(stack::Pop());
         });
         Dot = dict::AddNativeWord(".", [](){
             auto value = stack::Pop();
@@ -99,8 +103,10 @@ namespace words {
         });
         dict::AddNativeWord("word", [](){
             auto buf = core::Builder.CreateIntToPtr(stack::Pop(), core::StrType);
-            stack::Push(core::CallFunction(util::ReadWordFunc, buf));
-            CreateBrNext();
+            auto res = core::CallFunction(util::ReadWordFunc, {buf, core::GetInt(1024)});
+            stack::Push(res);
+            auto is_failed = core::Builder.CreateICmpSLT(res, core::GetInt(0));
+            core::Builder.CreateCondBr(is_failed, Throw.block, engine::Next);
         });
         dict::AddNativeWord("prints", [](){
             auto str = core::Builder.CreateIntToPtr(stack::Pop(), core::StrType);
