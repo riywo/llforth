@@ -24,15 +24,15 @@ namespace engine {
         Entry = core::CreateBasicBlock("entry", MainFunction);
         Next = core::CreateBasicBlock("next", MainFunction);
 
-        core::Builder.SetInsertPoint(Entry);
-        for (auto initializer: Initializers) {
+        for (const auto initializer: Initializers) {
+            core::Builder.SetInsertPoint(Entry);
             initializer(MainFunction, Entry);
         }
     };
 
     static void Finalize(const std::vector<Constant*>& code) {
-        core::Builder.SetInsertPoint(Entry);
-        for (auto finalizer: Finalizers) {
+        for (const auto finalizer: Finalizers) {
+            core::Builder.SetInsertPoint(Entry);
             finalizer(code);
         }
         core::Builder.CreateBr(Next);
@@ -40,7 +40,7 @@ namespace engine {
         core::Builder.SetInsertPoint(Next);
         auto pc = core::Builder.CreateLoad(PC);
         core::Builder.CreateStore(core::Builder.CreateLoad(pc), W);
-        auto new_pc = core::Builder.CreateGEP(pc, core::GetInt(1));
+        auto new_pc = core::Builder.CreateGEP(pc, core::GetIndex(1));
         core::Builder.CreateStore(new_pc, PC);
         Jump();
     };

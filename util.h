@@ -31,6 +31,9 @@ namespace util {
     const static core::Func SkipCommentFunc {
         "skip_comment", FunctionType::get(core::VoidType, {}, false)
     };
+    const static core::Func PrintStackFunc {
+        "print_stack", FunctionType::get(core::VoidType, {core::IndexType, core::IntType->getPointerTo()}, false)
+    };
 
     static void Initialize() {
         core::Func printf = {
@@ -152,6 +155,28 @@ namespace util {
             auto c_switch = core::Builder.CreateSwitch(c, loop);
             c_switch->addCase(core::GetChar('\n'), end);
             c_switch->addCase(core::GetChar(-1), end);
+
+            core::Builder.SetInsertPoint(end);
+            core::Builder.CreateRetVoid();
+        });
+        core::CreateFunction(PrintStackFunc, [](Function* f, BasicBlock* entry){
+            auto args = f->arg_begin();
+            auto start_index = args++;
+            auto stack = args++;
+            auto loop = core::CreateBasicBlock("loop", f);
+            auto end = core::CreateBasicBlock("end", f);
+            core::Builder.CreateBr(loop);
+
+            core::Builder.SetInsertPoint(loop);
+            auto index = core::Builder.CreatePHI(core::IndexType, 2);
+            index->addIncoming(start_index, entry);
+            auto next_index = core::Builder.CreateSub(index, core::GetIndex(1));
+            index->addIncoming(next_index, loop);
+            auto addr = core::Builder.CreateGEP(stack, index);
+            auto value = core::Builder.CreateLoad(addr);
+            core::CallFunction(PrintIntFunc, value);
+            auto is_zero = core::Builder.CreateICmpSLT(next_index, core::GetIndex(0));
+            core::Builder.CreateCondBr(is_zero, end, loop);
 
             core::Builder.SetInsertPoint(end);
             core::Builder.CreateRetVoid();

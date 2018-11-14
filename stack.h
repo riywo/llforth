@@ -7,6 +7,7 @@
 
 #include "core.h"
 #include "dict.h"
+#include "util.h"
 
 namespace stack {
     static Value* SP;
@@ -43,6 +44,13 @@ namespace stack {
         auto top_addr = core::Builder.CreateGEP(Stack, {core::GetIndex(0), top_sp});
         core::Builder.CreateStore(core::Builder.CreateLoad(top_addr), current_addr);
         core::Builder.CreateStore(core::Builder.CreateAdd(current_sp, core::GetIndex(1)), SP);
+    }
+
+    static void Print() {
+        auto current_sp = core::Builder.CreateLoad(SP);
+        auto top_sp = core::Builder.CreateSub(current_sp, core::GetIndex(1));
+        auto start_addr = core::Builder.CreateGEP(Stack, {core::GetIndex(0), core::GetIndex(0)});
+        core::CallFunction(util::PrintStackFunc, {top_sp, start_addr});
     }
 
     static void RPush(Value* value) {

@@ -16,11 +16,13 @@ namespace words {
     static dict::Word Branch0;
     static dict::Word Throw;
     static dict::Word Dot;
-    static dict::Word Bye;
     static dict::Word Docol;
+    static dict::Word Inbuf;
+    static dict::Word Word;
+    static dict::Word Create;
     static dict::Word Exit;
 
-    static Constant* Inbuf;
+    static Constant* InBuffer;
 
     static dict::Word AddLitWord(const std::string& value) {
         return dict::AddCompileWord(value, Lit.addr, std::stoi(value));
@@ -47,9 +49,9 @@ namespace words {
     static void Initialize(Function* main, BasicBlock* entry) {
         util::Initialize();
 
-        Inbuf = core::CreateGlobalArrayVariable("inbuf", core::CharType, 1024, false);
+        InBuffer = core::CreateGlobalArrayVariable("inbuffer", core::CharType, 1024, false);
 
-        Bye = dict::AddNativeWord("bye", [](){
+        dict::AddNativeWord("bye", [](){
             CreateRet(0);
         });
         Throw = dict::AddNativeWord("throw", [](){
@@ -66,6 +68,10 @@ namespace words {
         });
         dict::AddNativeWord("drop", [](){
             stack::Drop();
+            CreateBrNext();
+        });
+        dict::AddNativeWord(".S", [](){
+            stack::Print();
             CreateBrNext();
         });
         Lit = dict::AddNativeWord("lit", [](){
@@ -96,12 +102,12 @@ namespace words {
             core::Builder.CreateStore(return_pc, engine::PC);
             CreateBrNext();
         });
-        dict::AddNativeWord("inbuf", [](){
-            auto inbuf = core::Builder.CreateGEP(Inbuf, {core::GetIndex(0), core::GetIndex(0)});
+        Inbuf = dict::AddNativeWord("inbuf", [](){
+            auto inbuf = core::Builder.CreateGEP(InBuffer, {core::GetIndex(0), core::GetIndex(0)});
             stack::Push(core::Builder.CreatePtrToInt(inbuf, core::IntType));
             CreateBrNext();
         });
-        dict::AddNativeWord("word", [](){
+        Word = dict::AddNativeWord("word", [](){
             auto buf = core::Builder.CreateIntToPtr(stack::Pop(), core::StrType);
             auto res = core::CallFunction(util::ReadWordFunc, {buf, core::GetInt(1024)});
             stack::Push(res);
@@ -128,9 +134,19 @@ namespace words {
             core::CallFunction(util::SkipCommentFunc);
             CreateBrNext();
         });
+        Create = dict::AddNativeWord("create", [](){
+
+            CreateBrNext();
+        });
         dict::AddColonWord("foo", Docol.addr, {
             AddLitWord("1").xt,
             Dot.xt,
+            Exit.xt,
+        });
+        dict::AddColonWord(":", Docol.addr, {
+            Inbuf.xt, Word.xt,
+            AddBranch0Word(-2).xt,
+            Inbuf.xt, Create.xt,
             Exit.xt,
         });
         dict::AddNativeWord("execute", [](){ // This definition must be the last

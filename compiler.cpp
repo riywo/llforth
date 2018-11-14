@@ -6,6 +6,7 @@
 #include "dict.h"
 #include "words.h"
 #include "stack.h"
+#include "util.h"
 
 struct Token {
     enum Type {Word, Branch, Branch0} type;
