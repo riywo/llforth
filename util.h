@@ -43,6 +43,9 @@ namespace util {
         core::Func strtoll = {
                 "strtoll", FunctionType::get(core::IntType, {core::StrType, core::StrType->getPointerTo(), core::IntType}, false)
         };
+        core::Func strcmp = {
+                "strcmp", FunctionType::get(core::IntType, {core::StrType, core::StrType}, false)
+        };
         core::CreateFunction(PrintIntFunc, [=](Function* f, BasicBlock* entry){
             auto arg = f->arg_begin();
             auto fmt = core::Builder.CreateGlobalStringPtr("%d ");
@@ -92,35 +95,9 @@ namespace util {
             auto args = f->arg_begin();
             auto a_str = args++;
             auto b_str = args++;
-            auto loop = core::CreateBasicBlock("loop", f);
-            auto check_null = core::CreateBasicBlock("check_null", f);
-            auto loop_continue = core::CreateBasicBlock("loop_continue", f);
-            auto match = core::CreateBasicBlock("match", f);
-            auto not_match = core::CreateBasicBlock("not_match", f);
-            core::Builder.CreateBr(loop);
-
-            core::Builder.SetInsertPoint(loop);
-            auto index = core::Builder.CreatePHI(core::IntType, 2);
-            index->addIncoming(core::GetInt(0), entry);
-            auto a_char = core::Builder.CreateLoad(core::Builder.CreateGEP(a_str, index));
-            auto b_char = core::Builder.CreateLoad(core::Builder.CreateGEP(b_str, index));
-            auto is_match = core::Builder.CreateICmpEQ(a_char, b_char);
-            core::Builder.CreateCondBr(is_match, check_null, not_match);
-
-            core::Builder.SetInsertPoint(check_null);
-            auto is_null = core::Builder.CreateICmpEQ(a_char, core::GetChar(0));
-            core::Builder.CreateCondBr(is_null, match, loop_continue);
-
-            core::Builder.SetInsertPoint(loop_continue);
-            auto next_index = core::Builder.CreateAdd(index, core::GetInt(1));
-            index->addIncoming(next_index, loop_continue);
-            core::Builder.CreateBr(loop);
-
-            core::Builder.SetInsertPoint(match);
-            core::Builder.CreateRet(core::Builder.getInt1(true));
-
-            core::Builder.SetInsertPoint(not_match);
-            core::Builder.CreateRet(core::Builder.getInt1(false));
+            auto cmp = core::CallFunction(strcmp, {a_str, b_str});
+            auto icmp = core::Builder.CreateICmpEQ(cmp, core::GetInt(0));
+            core::Builder.CreateRet(icmp);
         });
         core::CreateFunction(FindXtFunc, [=](Function* f, BasicBlock* entry){
             auto arg = f->arg_begin();
