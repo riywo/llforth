@@ -29,6 +29,13 @@ namespace stack {
         return core::Builder.CreateLoad(addr);
     }
 
+    static void Drop() {
+        auto current_sp = core::Builder.CreateLoad(SP);
+        auto top_sp = core::Builder.CreateSub(current_sp, core::GetIndex(1));
+        auto addr = core::Builder.CreateGEP(Stack, {core::GetIndex(0), top_sp});
+        core::Builder.CreateStore(top_sp, SP);
+    }
+
     static void Dup() {
         auto current_sp = core::Builder.CreateLoad(SP);
         auto current_addr = core::Builder.CreateGEP(Stack, {core::GetIndex(0), current_sp});

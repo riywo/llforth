@@ -8,7 +8,8 @@
     branch .start
 
 .number:
-\    inbuf number
+    drop
+    inbuf number
     branch .start
 
 .end:

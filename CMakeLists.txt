@@ -15,7 +15,7 @@ target_link_libraries(llforthc ${llvm_libs})
 
 add_custom_target(test-compiler
         COMMAND lit -a --path ${LLVM_TOOLS_BINARY_DIR} --path $<TARGET_FILE_DIR:llforthc> ../test/compiler
-        DEPENDS llforthc
+        DEPENDS llforthc test/compiler/*.forth
 )
 
 add_executable(llforth llforth.o)

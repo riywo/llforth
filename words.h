@@ -60,6 +60,10 @@ namespace words {
             stack::Dup();
             CreateBrNext();
         });
+        dict::AddNativeWord("drop", [](){
+            stack::Drop();
+            CreateBrNext();
+        });
         Lit = dict::AddNativeWord("lit", [](){
             auto value = dict::GetXtEmbedded();
             stack::Push(value);
@@ -101,6 +105,11 @@ namespace words {
         dict::AddNativeWord("prints", [](){
             auto str = core::Builder.CreateIntToPtr(stack::Pop(), core::StrType);
             core::CallFunction(util::PrintStrFunc, str);
+            CreateBrNext();
+        });
+        dict::AddNativeWord("number", [](){
+            auto str = core::Builder.CreateIntToPtr(stack::Pop(), core::StrType);
+            stack::Push(core::CallFunction(util::StringToIntFunc, str));
             CreateBrNext();
         });
         dict::AddNativeWord("find", [](){

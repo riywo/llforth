@@ -23,6 +23,9 @@ namespace util {
     const static core::Func FindXtFunc {
         "find_xt", FunctionType::get(dict::XtPtrType, {core::StrType}, false)
     };
+    const static core::Func StringToIntFunc {
+        "string_to_int", FunctionType::get(core::IntType, {core::StrType}, false)
+    };
     const static core::Func StringEqualFunc {
         "string_equal", FunctionType::get(core::BoolType, {core::StrType, core::StrType}, false)
     };
@@ -37,6 +40,9 @@ namespace util {
         core::Func getchar = {
                 "getchar", FunctionType::get(core::CharType, {}, false)
         };
+        core::Func strtoll = {
+                "strtoll", FunctionType::get(core::IntType, {core::StrType, core::StrType->getPointerTo(), core::IntType}, false)
+        };
         core::CreateFunction(PrintIntFunc, [=](Function* f, BasicBlock* entry){
             auto arg = f->arg_begin();
             auto fmt = core::Builder.CreateGlobalStringPtr("%d ");
@@ -48,6 +54,13 @@ namespace util {
             auto fmt = core::Builder.CreateGlobalStringPtr("%s ");
             core::CallFunction(printf, {fmt, arg});
             core::Builder.CreateRetVoid();
+        });
+        core::CreateFunction(StringToIntFunc, [=](Function* f, BasicBlock* entry){
+            auto str = f->arg_begin();
+            auto endptr = core::Builder.CreateAlloca(core::StrType);
+            auto base = core::GetInt(10);
+            auto number = core::CallFunction(strtoll, {str, endptr, base});
+            core::Builder.CreateRet(number);
         });
         core::CreateFunction(ReadWordFunc, [=](Function* f, BasicBlock* entry) {
             auto arg = f->arg_begin();
