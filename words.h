@@ -16,13 +16,15 @@ namespace words {
     static dict::Word Branch0;
     static dict::Word Throw;
     static dict::Word Dot;
+    static dict::Word Dup;
     static dict::Word Docol;
     static dict::Word Inbuf;
     static dict::Word Word;
     static dict::Word Create;
     static dict::Word Exit;
 
-    static Constant* InBuffer;
+    static Constant* StringBuffer;
+    static Constant* ColonBuffer;
 
     static dict::Word AddLitWord(const std::string& value) {
         return dict::AddCompileWord(value, Lit.addr, std::stoi(value));
@@ -49,7 +51,8 @@ namespace words {
     static void Initialize(Function* main, BasicBlock* entry) {
         util::Initialize();
 
-        InBuffer = core::CreateGlobalArrayVariable("inbuffer", core::CharType, 1024, false);
+        StringBuffer = core::CreateGlobalArrayVariable("string_buffer", core::CharType, 1024, false);
+        ColonBuffer = core::CreateGlobalArrayVariable("colon_buffer", dict::XtType, 1024, false);
 
         dict::AddNativeWord("bye", [](){
             CreateRet(0);
@@ -62,7 +65,7 @@ namespace words {
             core::CallFunction(util::PrintIntFunc, value);
             CreateBrNext();
         });
-        dict::AddNativeWord("dup", [](){
+        Dup = dict::AddNativeWord("dup", [](){
             stack::Dup();
             CreateBrNext();
         });
@@ -103,7 +106,7 @@ namespace words {
             CreateBrNext();
         });
         Inbuf = dict::AddNativeWord("inbuf", [](){
-            auto inbuf = core::Builder.CreateGEP(InBuffer, {core::GetIndex(0), core::GetIndex(0)});
+            auto inbuf = core::Builder.CreateGEP(StringBuffer, {core::GetIndex(0), core::GetIndex(0)});
             stack::Push(core::Builder.CreatePtrToInt(inbuf, core::IntType));
             CreateBrNext();
         });
@@ -135,18 +138,22 @@ namespace words {
             CreateBrNext();
         });
         Create = dict::AddNativeWord("create", [](){
-
+            auto xt = core::Builder.CreateAlloca(dict::XtType);
+            auto name = core::Builder.CreateIntToPtr(stack::Pop(), core::StrType);
+            auto length = stack::Pop();
+            auto word = core::Builder.CreateAlloca(core::CharType, length);
+            core::CallFunction(util::StringCopyFunc, {word, name});
+            core::Builder.CreateStore(word, core::Builder.CreateGEP(xt, {core::GetIndex(0), core::GetIndex(dict::XtWord)}));
+            core::Builder.CreateStore(Docol.addr, core::Builder.CreateGEP(xt, {core::GetIndex(0), core::GetIndex(dict::XtImplAddress)}));
+            stack::Push(core::Builder.CreatePtrToInt(xt, core::IntType));
             CreateBrNext();
         });
-        dict::AddColonWord("foo", Docol.addr, {
-            AddLitWord("1").xt,
-            Dot.xt,
-            Exit.xt,
-        });
         dict::AddColonWord(":", Docol.addr, {
-            Inbuf.xt, Word.xt,
+            Inbuf.xt, Word.xt, Dup.xt,
             AddBranch0Word(-2).xt,
             Inbuf.xt, Create.xt,
+            // TODO
+            Dot.xt,
             Exit.xt,
         });
         dict::AddNativeWord("execute", [](){ // This definition must be the last

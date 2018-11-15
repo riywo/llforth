@@ -61,8 +61,13 @@ namespace dict {
     };
 
     static Word AddCompileWord(const std::string& word, BlockAddress* addr, int embedded) {
-        auto xt = AddXt(word, nullptr, nullptr, addr, nullptr, core::GetInt(embedded));
-        return AddWord(word, xt, addr);
+        auto found = Dictionary.find(word);
+        if (found == Dictionary.end()) {
+            auto xt = AddXt(word, nullptr, nullptr, addr, nullptr, core::GetInt(embedded));
+            return AddWord(word, xt, addr);
+        } else {
+            return found->second;
+        }
     };
 
     static Word AddNativeWord(const std::string& word, const std::function<void()>& impl) {

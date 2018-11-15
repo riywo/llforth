@@ -34,6 +34,9 @@ namespace util {
     const static core::Func PrintStackFunc {
         "print_stack", FunctionType::get(core::VoidType, {core::IndexType, core::IntType->getPointerTo()}, false)
     };
+    const static core::Func StringCopyFunc {
+        "string_copy", FunctionType::get(core::VoidType, {core::StrType, core::StrType}, false)
+    };
 
     static void Initialize() {
         core::Func printf = {
@@ -48,9 +51,12 @@ namespace util {
         core::Func strcmp = {
                 "strcmp", FunctionType::get(core::IntType, {core::StrType, core::StrType}, false)
         };
+        core::Func strcpy = {
+                "strcpy", FunctionType::get(core::StrType, {core::StrType, core::StrType}, false)
+        };
         core::CreateFunction(PrintIntFunc, [=](Function* f, BasicBlock* entry){
             auto arg = f->arg_begin();
-            auto fmt = core::Builder.CreateGlobalStringPtr("%d ");
+            auto fmt = core::Builder.CreateGlobalStringPtr("%lld ");
             core::CallFunction(printf, {fmt, arg});
             core::Builder.CreateRetVoid();
         });
@@ -112,6 +118,13 @@ namespace util {
             auto cmp = core::CallFunction(strcmp, {a_str, b_str});
             auto icmp = core::Builder.CreateICmpEQ(cmp, core::GetInt(0));
             core::Builder.CreateRet(icmp);
+        });
+        core::CreateFunction(StringCopyFunc, [=](Function* f, BasicBlock* entry) {
+            auto args = f->arg_begin();
+            auto a_str = args++;
+            auto b_str = args++;
+            core::CallFunction(strcpy, {a_str, b_str});
+            core::Builder.CreateRetVoid();
         });
         core::CreateFunction(FindXtFunc, [=](Function* f, BasicBlock* entry){
             auto arg = f->arg_begin();
