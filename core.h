@@ -52,6 +52,10 @@ namespace core {
         return ConstantInt::get(CharType, (int)value);
     }
 
+    static ConstantInt* GetBool(bool value) {
+        return ConstantInt::get(BoolType, value);
+    }
+
     static void CreateModule(const std::string& name) {
         TheModule = llvm::make_unique<Module>(name, TheContext);
     }

@@ -24,10 +24,13 @@ namespace words {
     static dict::Word Inbuf;
     static dict::Word Word;
     static dict::Word Create;
+    static dict::Word Finish;
     static dict::Word Exit;
     static dict::Word State;
+    static dict::Word Comma;
 
     static Constant* StateValue;
+    static Constant* HereValue;
 
     static Constant* StringBuffer;
     static Constant* ColonBuffer;
@@ -47,10 +50,11 @@ namespace words {
     static void Initialize(Function* main, BasicBlock* entry) {
         util::Initialize();
 
-        StringBuffer = core::CreateGlobalArrayVariable("string_buffer", core::CharType, 1024, false);
-        ColonBuffer = core::CreateGlobalArrayVariable("colon_buffer", dict::XtType, 1024, false);
-
         StateValue = core::CreateGlobalVariable("state", core::IntType, core::GetInt(0), false);
+        HereValue = core::CreateGlobalVariable("here", core::IndexType, core::GetIndex(0), false);
+
+        StringBuffer = core::CreateGlobalArrayVariable("string_buffer", core::CharType, 1024, false);
+        ColonBuffer = core::CreateGlobalArrayVariable("colon_buffer", dict::XtPtrType, 1024, false);
 
         dict::AddNativeWord("bye", [](){
             CreateRet(0);
@@ -156,6 +160,11 @@ namespace words {
             stack::PushPtr(found);
             CreateBrNext();
         });
+        dict::AddNativeWord("cr", [](){
+            auto cr = core::Builder.CreateGlobalStringPtr("\n");
+            core::CallFunction(util::PrintStrFunc, cr);
+            CreateBrNext();
+        });
         dict::AddNativeWord("\\", [](){
             core::CallFunction(util::SkipCommentFunc);
             CreateBrNext();
@@ -166,19 +175,59 @@ namespace words {
             auto length = stack::Pop();
             auto word = core::Builder.CreateAlloca(core::CharType, length);
             core::CallFunction(util::StringCopyFunc, {word, name});
-            core::Builder.CreateStore(word, core::Builder.CreateGEP(xt, {core::GetIndex(0), core::GetIndex(dict::XtWord)}));
-            core::Builder.CreateStore(Docol.addr, core::Builder.CreateGEP(xt, {core::GetIndex(0), core::GetIndex(dict::XtImplAddress)}));
+            core::Builder.CreateStore(dict::GetLastXt(),    core::Builder.CreateGEP(xt, {core::GetIndex(0), core::GetIndex(dict::XtPrevious)}));
+            core::Builder.CreateStore(word,                 core::Builder.CreateGEP(xt, {core::GetIndex(0), core::GetIndex(dict::XtWord)}));
+            core::Builder.CreateStore(Docol.addr,           core::Builder.CreateGEP(xt, {core::GetIndex(0), core::GetIndex(dict::XtImplAddress)}));
+            core::Builder.CreateStore(core::GetBool(false), core::Builder.CreateGEP(xt, {core::GetIndex(0), core::GetIndex(dict::XtImmediate)}));
             stack::PushPtr(xt);
+            core::Builder.CreateStore(core::GetIndex(0), HereValue);
+            CreateBrNext();
+        });
+        Finish = dict::AddNativeWord("finish", [](){
+            auto length = core::Builder.CreateLoad(HereValue);
+            auto xts = core::Builder.CreateAlloca(dict::XtPtrType, length);
+            auto xts_ptr = core::Builder.CreateGEP(xts, core::GetIndex(0));
+            core::Builder.CreateStore(Exit.xt, xts_ptr);
+            auto buf_ptr = core::Builder.CreateGEP(ColonBuffer, {core::GetIndex(0), core::GetIndex(0)});
+//            core::Builder.CreateMemCpy(xts_ptr, 64, buf_ptr, 64, length);
+//            core::CallFunction(util::MemoryCopyFunc, {xts_ptr, buf_ptr, length});
+
+            auto xt = stack::PopPtr(dict::XtPtrType);
+            //core::Builder.CreateStore(xts_ptr, core::Builder.CreateGEP(xt, {core::GetIndex(0), core::GetIndex(dict::XtColon)}));
+            core::Builder.CreateStore(buf_ptr, core::Builder.CreateGEP(xt, {core::GetIndex(0), core::GetIndex(dict::XtColon)}));
+            core::Builder.CreateStore(xt, dict::LastXt);
+            CreateBrNext();
+        });
+        dict::AddNativeWord("flag", [](){
+            auto xt = stack::PopPtr(dict::XtPtrType);
+            auto flag = dict::GetXtImmediate(xt);
+            stack::Push(core::Builder.CreateIntCast(flag, core::IntType, true));
+            CreateBrNext();
+        });
+        Comma = dict::AddNativeWord(",", [](){
+            auto xt = stack::PopPtr(dict::XtPtrType);
+            auto here = core::Builder.CreateLoad(HereValue);
+            auto addr = core::Builder.CreateGEP(ColonBuffer, {core::GetIndex(0), here});
+            core::Builder.CreateStore(xt, addr);
+            auto next = core::Builder.CreateAdd(here, core::GetIndex(1));
+            core::Builder.CreateStore(next, HereValue);
             CreateBrNext();
         });
         dict::AddColonWord(":", Docol.addr, {
             Inbuf.xt, Word.xt, Dup.xt,
             Branch0.xt, GetConstantIntToXtPtr(-4),
             Inbuf.xt, Create.xt,
+            Lit.xt, GetConstantIntToXtPtr(1), State.xt, Write.xt,
             // TODO
-            Dot.xt,
             Exit.xt,
         });
+        dict::AddColonWord(";", Docol.addr, {
+            Lit.xt, GetConstantIntToXtPtr(0), State.xt, Write.xt,
+            Lit.xt, Exit.xt, Comma.xt,
+            Finish.xt,
+            // TODO
+            Exit.xt,
+        }, true);
         dict::AddNativeWord("execute", [](){ // This definition must be the last
             auto xt = stack::PopPtr(dict::XtPtrType);
             core::Builder.CreateStore(xt, engine::W);

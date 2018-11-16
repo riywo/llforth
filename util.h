@@ -37,6 +37,9 @@ namespace util {
     const static core::Func StringCopyFunc {
         "string_copy", FunctionType::get(core::VoidType, {core::StrType, core::StrType}, false)
     };
+    const static core::Func MemoryCopyFunc {
+        "memory_copy", FunctionType::get(core::VoidType, {dict::XtPtrPtrType, dict::XtPtrPtrType, core::IndexType}, false)
+    };
 
     static void Initialize() {
         core::Func printf = {
@@ -53,6 +56,9 @@ namespace util {
         };
         core::Func strcpy = {
                 "strcpy", FunctionType::get(core::StrType, {core::StrType, core::StrType}, false)
+        };
+        core::Func memcpy = {
+                "llvm.memcpy", FunctionType::get(core::StrType, {core::StrType, core::StrType}, false)
         };
         core::CreateFunction(PrintIntFunc, [=](Function* f, BasicBlock* entry){
             auto arg = f->arg_begin();
@@ -174,22 +180,23 @@ namespace util {
         });
         core::CreateFunction(PrintStackFunc, [](Function* f, BasicBlock* entry){
             auto args = f->arg_begin();
-            auto start_index = args++;
+            auto current_index = args++;
             auto stack = args++;
             auto loop = core::CreateBasicBlock("loop", f);
             auto end = core::CreateBasicBlock("end", f);
-            core::Builder.CreateBr(loop);
+            auto is_empty = core::Builder.CreateICmpSLT(current_index, core::GetIndex(0));
+            core::Builder.CreateCondBr(is_empty, end, loop);
 
             core::Builder.SetInsertPoint(loop);
             auto index = core::Builder.CreatePHI(core::IndexType, 2);
-            index->addIncoming(start_index, entry);
-            auto next_index = core::Builder.CreateSub(index, core::GetIndex(1));
+            index->addIncoming(core::GetIndex(0), entry);
+            auto next_index = core::Builder.CreateAdd(index, core::GetIndex(1));
             index->addIncoming(next_index, loop);
             auto addr = core::Builder.CreateGEP(stack, index);
             auto value = core::Builder.CreateLoad(addr);
             core::CallFunction(PrintIntFunc, value);
-            auto is_zero = core::Builder.CreateICmpSLT(next_index, core::GetIndex(0));
-            core::Builder.CreateCondBr(is_zero, end, loop);
+            auto is_top = core::Builder.CreateICmpSGT(next_index, current_index);
+            core::Builder.CreateCondBr(is_top, end, loop);
 
             core::Builder.SetInsertPoint(end);
             core::Builder.CreateRetVoid();

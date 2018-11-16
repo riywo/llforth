@@ -4,13 +4,26 @@
     inbuf find
     dup
     branch0 .number
+
+    state @
+    branch0 .interpreting
+
+    dup flag
+    branch0 .compiling
+
+.interpreting:
     execute
+    branch .start
+
+.compiling:
+    ,
     branch .start
 
 .number:
     drop
     inbuf number
-    branch .start
+    state @
+    branch0 .start
 
 .end:
     bye
