@@ -18,11 +18,16 @@ namespace words {
     static dict::Word Throw;
     static dict::Word Dot;
     static dict::Word Dup;
+    static dict::Word Fetch;
+    static dict::Word Write;
     static dict::Word Docol;
     static dict::Word Inbuf;
     static dict::Word Word;
     static dict::Word Create;
     static dict::Word Exit;
+    static dict::Word State;
+
+    static Constant* StateValue;
 
     static Constant* StringBuffer;
     static Constant* ColonBuffer;
@@ -44,6 +49,8 @@ namespace words {
 
         StringBuffer = core::CreateGlobalArrayVariable("string_buffer", core::CharType, 1024, false);
         ColonBuffer = core::CreateGlobalArrayVariable("colon_buffer", dict::XtType, 1024, false);
+
+        StateValue = core::CreateGlobalVariable("state", core::IntType, core::GetInt(0), false);
 
         dict::AddNativeWord("bye", [](){
             CreateRet(0);
@@ -93,6 +100,22 @@ namespace words {
         Branch0 = dict::AddNativeWord("branch0", [](){
             auto is_zero = core::Builder.CreateICmpEQ(stack::Pop(), core::GetInt(0));
             core::Builder.CreateCondBr(is_zero, Branch.block, Skip.block);
+        });
+        State = dict::AddNativeWord("state", [](){
+            auto addr = ConstantExpr::getPtrToInt(StateValue, core::IntType);
+            stack::Push(addr);
+            CreateBrNext();
+        });
+        Fetch = dict::AddNativeWord("@", [](){
+            auto addr = stack::PopPtr(core::IntPtrType);
+            stack::Push(core::Builder.CreateLoad(addr));
+            CreateBrNext();
+        });
+        Write = dict::AddNativeWord("!", [](){
+            auto addr = stack::PopPtr(core::IntPtrType);
+            auto value = stack::Pop();
+            core::Builder.CreateStore(value, addr);
+            CreateBrNext();
         });
         Docol = dict::AddNativeWord("docol", [](){
             stack::RPush(core::Builder.CreateLoad(engine::PC));
