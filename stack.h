@@ -21,6 +21,10 @@ namespace stack {
         core::Builder.CreateStore(value, addr);
         core::Builder.CreateStore(core::Builder.CreateAdd(current_sp, core::GetIndex(1)), SP);
     }
+    
+    static void PushPtr(Value* value) {
+        Push(core::Builder.CreatePtrToInt(value, core::IntType));
+    }
 
     static LoadInst* Pop() {
         auto current_sp = core::Builder.CreateLoad(SP);
@@ -28,6 +32,10 @@ namespace stack {
         auto addr = core::Builder.CreateGEP(Stack, {core::GetIndex(0), top_sp});
         core::Builder.CreateStore(top_sp, SP);
         return core::Builder.CreateLoad(addr);
+    }
+    
+    static Value* PopPtr(Type* ptr_type) {
+        return core::Builder.CreateIntToPtr(Pop(), ptr_type);
     }
 
     static void Drop() {

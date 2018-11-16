@@ -96,12 +96,12 @@ static void MainLoop(std::istream& input, std::vector<Constant*>* code) {
                 } else {
                     int label_idx = (int)found->second;
                     int offset = label_idx - (int)code->size();
-                    xt = words::GetIntToXtPtr(offset);
+                    xt = words::GetConstantIntToXtPtr(offset);
                 }
                 break;
             }
             case Code::Type::Int: {
-                xt = words::GetIntToXtPtr(std::stoi(c.value));
+                xt = words::GetConstantIntToXtPtr(std::stoi(c.value));
                 break;
             }
         }

@@ -27,7 +27,7 @@ namespace words {
     static Constant* StringBuffer;
     static Constant* ColonBuffer;
 
-    static Constant* GetIntToXtPtr(int num) {
+    static Constant* GetConstantIntToXtPtr(int num) {
         return ConstantExpr::getIntToPtr(ConstantInt::get(core::IntType, num), dict::XtPtrType);
     }
 
@@ -71,7 +71,7 @@ namespace words {
         Lit = dict::AddNativeWord("lit", [](){
             auto pc = core::Builder.CreateLoad(engine::PC);
             auto value = core::Builder.CreateLoad(pc);
-            stack::Push(core::Builder.CreatePtrToInt(value, core::IntType));
+            stack::PushPtr(value);
             auto new_pc = core::Builder.CreateGEP(pc, core::GetIndex(1));
             core::Builder.CreateStore(new_pc, engine::PC);
             CreateBrNext();
@@ -79,7 +79,8 @@ namespace words {
         Branch = dict::AddNativeWord("branch", [](){
             auto pc = core::Builder.CreateLoad(engine::PC);
             auto value = core::Builder.CreateLoad(pc);
-            auto new_pc = core::Builder.CreateGEP(pc, core::Builder.CreatePtrToInt(value, core::IndexType));
+            auto offset = core::Builder.CreatePtrToInt(value, core::IndexType);
+            auto new_pc = core::Builder.CreateGEP(pc, offset);
             core::Builder.CreateStore(new_pc, engine::PC);
             CreateBrNext();
         });
@@ -90,8 +91,7 @@ namespace words {
             CreateBrNext();
         });
         Branch0 = dict::AddNativeWord("branch0", [](){
-            auto tos = stack::Pop();
-            auto is_zero = core::Builder.CreateICmpEQ(tos, core::GetInt(0));
+            auto is_zero = core::Builder.CreateICmpEQ(stack::Pop(), core::GetInt(0));
             core::Builder.CreateCondBr(is_zero, Branch.block, Skip.block);
         });
         Docol = dict::AddNativeWord("docol", [](){
@@ -107,30 +107,30 @@ namespace words {
         });
         Inbuf = dict::AddNativeWord("inbuf", [](){
             auto inbuf = core::Builder.CreateGEP(StringBuffer, {core::GetIndex(0), core::GetIndex(0)});
-            stack::Push(core::Builder.CreatePtrToInt(inbuf, core::IntType));
+            stack::PushPtr(inbuf);
             CreateBrNext();
         });
         Word = dict::AddNativeWord("word", [](){
-            auto buf = core::Builder.CreateIntToPtr(stack::Pop(), core::StrType);
+            auto buf = stack::PopPtr(core::StrType);
             auto res = core::CallFunction(util::ReadWordFunc, {buf, core::GetInt(1024)});
             stack::Push(res);
             auto is_failed = core::Builder.CreateICmpSLT(res, core::GetInt(0));
             core::Builder.CreateCondBr(is_failed, Throw.block, engine::Next);
         });
         dict::AddNativeWord("prints", [](){
-            auto str = core::Builder.CreateIntToPtr(stack::Pop(), core::StrType);
+            auto str = stack::PopPtr(core::StrType);
             core::CallFunction(util::PrintStrFunc, str);
             CreateBrNext();
         });
         dict::AddNativeWord("number", [](){
-            auto str = core::Builder.CreateIntToPtr(stack::Pop(), core::StrType);
+            auto str = stack::PopPtr(core::StrType);
             stack::Push(core::CallFunction(util::StringToIntFunc, str));
             CreateBrNext();
         });
         dict::AddNativeWord("find", [](){
-            auto str = core::Builder.CreateIntToPtr(stack::Pop(), core::StrType);
+            auto str = stack::PopPtr(core::StrType);
             auto found = core::CallFunction(util::FindXtFunc, str);
-            stack::Push(core::Builder.CreatePtrToInt(found, core::IntType));
+            stack::PushPtr(found);
             CreateBrNext();
         });
         dict::AddNativeWord("\\", [](){
@@ -139,25 +139,25 @@ namespace words {
         });
         Create = dict::AddNativeWord("create", [](){
             auto xt = core::Builder.CreateAlloca(dict::XtType);
-            auto name = core::Builder.CreateIntToPtr(stack::Pop(), core::StrType);
+            auto name = stack::PopPtr(core::StrType);
             auto length = stack::Pop();
             auto word = core::Builder.CreateAlloca(core::CharType, length);
             core::CallFunction(util::StringCopyFunc, {word, name});
             core::Builder.CreateStore(word, core::Builder.CreateGEP(xt, {core::GetIndex(0), core::GetIndex(dict::XtWord)}));
             core::Builder.CreateStore(Docol.addr, core::Builder.CreateGEP(xt, {core::GetIndex(0), core::GetIndex(dict::XtImplAddress)}));
-            stack::Push(core::Builder.CreatePtrToInt(xt, core::IntType));
+            stack::PushPtr(xt);
             CreateBrNext();
         });
         dict::AddColonWord(":", Docol.addr, {
             Inbuf.xt, Word.xt, Dup.xt,
-            Branch0.xt, GetIntToXtPtr(-3),
+            Branch0.xt, GetConstantIntToXtPtr(-4),
             Inbuf.xt, Create.xt,
             // TODO
             Dot.xt,
             Exit.xt,
         });
         dict::AddNativeWord("execute", [](){ // This definition must be the last
-            auto xt = core::Builder.CreateIntToPtr(stack::Pop(), dict::XtPtrType);
+            auto xt = stack::PopPtr(dict::XtPtrType);
             core::Builder.CreateStore(xt, engine::W);
             engine::Jump();
         });
