@@ -9,22 +9,33 @@
 #include "util.h"
 
 struct Token {
-    enum Type {Word, Branch, Branch0} type;
+    enum Type {Word, Int, Br, Label} type;
+    Constant* xt;
     std::string value;
 };
 
-static std::string GetLabel(const std::string& str) {
-    std::smatch sm;
-    if (std::regex_match(str, sm, std::regex("(\\..+):"))) {
-        return sm[1];
+struct Code {
+    enum Type {Word, Int, GotoLabel} type;
+    Constant* xt;
+    std::string value;
+};
+
+static Token ParseWord(const std::string& str) {
+    std::smatch label_match;
+    if (std::regex_match(str, label_match, std::regex("(\\..+):"))) {
+        return {Token::Type::Label, nullptr, label_match[1]};
     } else {
-        return "";
+        auto found = dict::Dictionary.find(str);
+        if (found == dict::Dictionary.end()) {
+            return {Token::Type::Int, words::Lit.xt, str};
+        } else {
+            return {Token::Type::Word, found->second.xt, str};
+        }
     }
 }
 
 static void MainLoop(std::istream& input, std::vector<Constant*>* code) {
     std::string line;
-    std::map<std::string, unsigned long> labels ={};
     std::vector<Token> tokens = {};
     while (std::getline(input, line)) {
         std::string str;
@@ -36,59 +47,65 @@ static void MainLoop(std::istream& input, std::vector<Constant*>* code) {
             } else if (str == "branch") {
                 std::string goto_label;
                 linestream >> goto_label;
-                token = {Token::Type::Branch, goto_label};
+                token = {Token::Type::Br, words::Branch.xt, goto_label};
             } else if (str == "branch0") {
                 std::string goto_label;
                 linestream >> goto_label;
-                token = {Token::Type::Branch0, goto_label};
+                token = {Token::Type::Br, words::Branch0.xt, goto_label};
             } else {
-                auto label = GetLabel(str);
-                if (label != "") {
-                    labels[label] = tokens.size();
-                    continue;
-                } else {
-                    token = {Token::Type::Word, str};
-                }
+                token = ParseWord(str);
             }
             tokens.push_back(token);
         }
     }
+    std::vector<Code> inner_codes = {};
+    std::map<std::string, unsigned long> labels = {};
     for (auto token: tokens) {
-        dict::Word word = {};
         switch (token.type) {
             case Token::Type::Word: {
-                auto found = dict::Dictionary.find(token.value);
-                if (found == dict::Dictionary.end()) {
-                    word = words::AddLitWord(token.value);
-                } else {
-                    word = found->second;
-                }
+                inner_codes.push_back(Code {Code::Type::Word, token.xt});
                 break;
             }
-            case Token::Type::Branch: {
-                auto found = labels.find(token.value);
-                if (found == labels.end()) {
-                    exit(1);
-                } else {
-                    int label_idx = (int)found->second;
-                    int offset = label_idx - (int)code->size() - 1;
-                    word = words::AddBranchWord(offset);
-                }
+            case Token::Type::Br: {
+                inner_codes.push_back(Code {Code::Type::Word, token.xt});
+                inner_codes.push_back(Code {Code::Type::GotoLabel, nullptr, token.value});
                 break;
             }
-            case Token::Type::Branch0: {
-                auto found = labels.find(token.value);
-                if (found == labels.end()) {
-                    exit(1);
-                } else {
-                    int label_idx = (int)found->second;
-                    int offset = label_idx - (int)code->size() - 1;
-                    word = words::AddBranch0Word(offset);
-                }
+            case Token::Type::Label: {
+                labels[token.value] = inner_codes.size();
+                break;
+            }
+            case Token::Type::Int: {
+                inner_codes.push_back(Code {Code::Type::Word, token.xt});
+                inner_codes.push_back(Code {Code::Type::Int, nullptr, token.value});
                 break;
             }
         }
-        code->push_back(word.xt);
+    }
+    for (auto c: inner_codes) {
+        Constant* xt;
+        switch (c.type) {
+            case Code::Type::Word: {
+                xt = c.xt;
+                break;
+            }
+            case Code::Type::GotoLabel: {
+                auto found = labels.find(c.value);
+                if (found == labels.end()) {
+                    exit(-1);
+                } else {
+                    int label_idx = (int)found->second;
+                    int offset = label_idx - (int)code->size();
+                    xt = words::GetIntToXtPtr(offset);
+                }
+                break;
+            }
+            case Code::Type::Int: {
+                xt = words::GetIntToXtPtr(std::stoi(c.value));
+                break;
+            }
+        }
+        code->push_back(xt);
     }
 }
 

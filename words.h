@@ -13,6 +13,7 @@
 namespace words {
     static dict::Word Lit;
     static dict::Word Branch;
+    static dict::Word Skip;
     static dict::Word Branch0;
     static dict::Word Throw;
     static dict::Word Dot;
@@ -26,19 +27,9 @@ namespace words {
     static Constant* StringBuffer;
     static Constant* ColonBuffer;
 
-    static dict::Word AddLitWord(const std::string& value) {
-        return dict::AddCompileWord(value, Lit.addr, std::stoi(value));
-    };
-
-    static dict::Word AddBranchWord(int offset) {
-        std::string name = "branch=" + std::to_string(offset);
-        return dict::AddCompileWord(name, Branch.addr, offset);
-    };
-
-    static dict::Word AddBranch0Word(int offset) {
-        std::string name = "branch0=" + std::to_string(offset);
-        return dict::AddCompileWord(name, Branch0.addr, offset);
-    };
+    static Constant* GetIntToXtPtr(int num) {
+        return ConstantExpr::getIntToPtr(ConstantInt::get(core::IntType, num), dict::XtPtrType);
+    }
 
     static void CreateBrNext() {
         core::Builder.CreateBr(engine::Next);
@@ -78,21 +69,30 @@ namespace words {
             CreateBrNext();
         });
         Lit = dict::AddNativeWord("lit", [](){
-            auto value = dict::GetXtEmbedded();
-            stack::Push(value);
+            auto pc = core::Builder.CreateLoad(engine::PC);
+            auto value = core::Builder.CreateLoad(pc);
+            stack::Push(core::Builder.CreatePtrToInt(value, core::IntType));
+            auto new_pc = core::Builder.CreateGEP(pc, core::GetIndex(1));
+            core::Builder.CreateStore(new_pc, engine::PC);
             CreateBrNext();
         });
         Branch = dict::AddNativeWord("branch", [](){
-            auto value = dict::GetXtEmbedded();
             auto pc = core::Builder.CreateLoad(engine::PC);
-            auto new_pc = core::Builder.CreateGEP(pc, value);
+            auto value = core::Builder.CreateLoad(pc);
+            auto new_pc = core::Builder.CreateGEP(pc, core::Builder.CreatePtrToInt(value, core::IndexType));
+            core::Builder.CreateStore(new_pc, engine::PC);
+            CreateBrNext();
+        });
+        Skip = dict::AddNativeWord("skip", [](){
+            auto pc = core::Builder.CreateLoad(engine::PC);
+            auto new_pc = core::Builder.CreateGEP(pc, core::GetIndex(1));
             core::Builder.CreateStore(new_pc, engine::PC);
             CreateBrNext();
         });
         Branch0 = dict::AddNativeWord("branch0", [](){
             auto tos = stack::Pop();
             auto is_zero = core::Builder.CreateICmpEQ(tos, core::GetInt(0));
-            core::Builder.CreateCondBr(is_zero, Branch.block, engine::Next);
+            core::Builder.CreateCondBr(is_zero, Branch.block, Skip.block);
         });
         Docol = dict::AddNativeWord("docol", [](){
             stack::RPush(core::Builder.CreateLoad(engine::PC));
@@ -150,7 +150,7 @@ namespace words {
         });
         dict::AddColonWord(":", Docol.addr, {
             Inbuf.xt, Word.xt, Dup.xt,
-            AddBranch0Word(-2).xt,
+            Branch0.xt, GetIntToXtPtr(-3),
             Inbuf.xt, Create.xt,
             // TODO
             Dot.xt,

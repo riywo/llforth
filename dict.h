@@ -19,7 +19,6 @@ namespace dict {
             core::StrType,   // Word of node
             AddressType,     // Implementation address
             xt_ptr_ptr_type, // Array of xt if colon word
-            core::IntType,   // Embedded integer for lit and branch
         });
         return xt_type;
     };
@@ -30,7 +29,7 @@ namespace dict {
     static Constant* _LastXt = XtPtrNull;
     static Constant* LastXt;
     enum XtMember {
-        XtPrevious, XtWord, XtImplAddress, XtColon, XtEmbedded
+        XtPrevious, XtWord, XtImplAddress, XtColon
     };
 
     struct Word {
@@ -42,12 +41,11 @@ namespace dict {
     static std::map<std::string, Word> Dictionary = {};
 
     static Constant* AddXt(const std::string& word, Constant* lastXt, Constant* str,
-                           BlockAddress* addr, Constant* colon, Constant* embedded) {
+                           BlockAddress* addr, Constant* colon) {
         if (!lastXt)   { lastXt   = ConstantPointerNull::get(XtPtrType); }
         if (!str)      { str      = ConstantPointerNull::get(core::StrType); }
         if (!colon)    { colon    = ConstantPointerNull::get(XtPtrPtrType); }
-        if (!embedded) { embedded = core::GetInt(0); }
-        auto value = ConstantStruct::get(XtType, lastXt, str, addr, colon, embedded);
+        auto value = ConstantStruct::get(XtType, lastXt, str, addr, colon);
         return core::CreateGlobalVariable("xt_" + word, XtType, value);
     };
 
@@ -60,16 +58,6 @@ namespace dict {
         return w;
     };
 
-    static Word AddCompileWord(const std::string& word, BlockAddress* addr, int embedded) {
-        auto found = Dictionary.find(word);
-        if (found == Dictionary.end()) {
-            auto xt = AddXt(word, nullptr, nullptr, addr, nullptr, core::GetInt(embedded));
-            return AddWord(word, xt, addr);
-        } else {
-            return found->second;
-        }
-    };
-
     static Word AddNativeWord(const std::string& word, const std::function<void()>& impl) {
         auto block = core::CreateBasicBlock("i_" + word, engine::MainFunction);
         core::Builder.SetInsertPoint(block);
@@ -77,7 +65,7 @@ namespace dict {
         NativeBlocks.push_back(block);
         auto addr = BlockAddress::get(block);
         auto str = core::Builder.CreateGlobalStringPtr(word, "w_" + word);
-        auto xt = AddXt(word, _LastXt, str, addr, nullptr, nullptr);
+        auto xt = AddXt(word, _LastXt, str, addr, nullptr);
         _LastXt = xt;
         return AddWord(word, xt, addr, block);
     };
@@ -86,7 +74,7 @@ namespace dict {
         auto str = core::Builder.CreateGlobalStringPtr(word, "w_" + word);
         auto words_array = core::CreateGlobalArrayVariable("col_" + word, XtPtrType, words);
         auto xts = core::CreateConstantGEP(words_array);
-        auto xt = AddXt(word, _LastXt, str, addr, xts, nullptr);
+        auto xt = AddXt(word, _LastXt, str, addr, xts);
         _LastXt = xt;
         return AddWord(word, xt, addr);
     };
@@ -106,12 +94,10 @@ namespace dict {
     static Value* GetXtWord(Value* xt)        { return GetXtMember(xt, XtWord);        };
     static Value* GetXtImplAddress(Value* xt) { return GetXtMember(xt, XtImplAddress); };
     static Value* GetXtColon(Value* xt)       { return GetXtMember(xt, XtColon);       };
-    static Value* GetXtEmbedded(Value* xt)    { return GetXtMember(xt, XtEmbedded);    };
     static Value* GetXtPrevious()    { return GetXtMember(XtPrevious);    };
     static Value* GetXtWord()        { return GetXtMember(XtWord);        };
     static Value* GetXtImplAddress() { return GetXtMember(XtImplAddress); };
     static Value* GetXtColon()       { return GetXtMember(XtColon);       };
-    static Value* GetXtEmbedded()    { return GetXtMember(XtEmbedded);    };
 
     static Value* GetLastXt() {
         return core::Builder.CreateLoad(LastXt);
