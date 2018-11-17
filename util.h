@@ -37,9 +37,6 @@ namespace util {
     const static core::Func StringCopyFunc {
         "string_copy", FunctionType::get(core::VoidType, {core::StrType, core::StrType}, false)
     };
-    const static core::Func MemoryCopyFunc {
-        "memory_copy", FunctionType::get(core::VoidType, {dict::XtPtrPtrType, dict::XtPtrPtrType, core::IndexType}, false)
-    };
 
     static void Initialize() {
         core::Func printf = {
@@ -56,9 +53,6 @@ namespace util {
         };
         core::Func strcpy = {
                 "strcpy", FunctionType::get(core::StrType, {core::StrType, core::StrType}, false)
-        };
-        core::Func memcpy = {
-                "llvm.memcpy", FunctionType::get(core::StrType, {core::StrType, core::StrType}, false)
         };
         core::CreateFunction(PrintIntFunc, [=](Function* f, BasicBlock* entry){
             auto arg = f->arg_begin();

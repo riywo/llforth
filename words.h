@@ -79,6 +79,30 @@ namespace words {
             stack::Print();
             CreateBrNext();
         });
+        dict::AddNativeWord("+", [](){
+            auto right = stack::Pop();
+            auto left = stack::Pop();
+            stack::Push(core::Builder.CreateAdd(left, right));
+            CreateBrNext();
+        });
+        dict::AddNativeWord("-", [](){
+            auto right = stack::Pop();
+            auto left = stack::Pop();
+            stack::Push(core::Builder.CreateSub(left, right));
+            CreateBrNext();
+        });
+        dict::AddNativeWord("*", [](){
+            auto right = stack::Pop();
+            auto left = stack::Pop();
+            stack::Push(core::Builder.CreateMul(left, right));
+            CreateBrNext();
+        });
+        dict::AddNativeWord("/", [](){
+            auto right = stack::Pop();
+            auto left = stack::Pop();
+            stack::Push(core::Builder.CreateSDiv(left, right));
+            CreateBrNext();
+        });
         Lit = dict::AddNativeWord("lit", [](){
             auto pc = core::Builder.CreateLoad(engine::PC);
             auto value = core::Builder.CreateLoad(pc);
@@ -189,12 +213,10 @@ namespace words {
             auto xts_ptr = core::Builder.CreateGEP(xts, core::GetIndex(0));
             core::Builder.CreateStore(Exit.xt, xts_ptr);
             auto buf_ptr = core::Builder.CreateGEP(ColonBuffer, {core::GetIndex(0), core::GetIndex(0)});
-//            core::Builder.CreateMemCpy(xts_ptr, 64, buf_ptr, 64, length);
-//            core::CallFunction(util::MemoryCopyFunc, {xts_ptr, buf_ptr, length});
+            core::Builder.CreateMemCpy(xts_ptr, 4, buf_ptr, 4, core::Builder.CreateMul(length, core::GetIndex(8)));
 
             auto xt = stack::PopPtr(dict::XtPtrType);
-            //core::Builder.CreateStore(xts_ptr, core::Builder.CreateGEP(xt, {core::GetIndex(0), core::GetIndex(dict::XtColon)}));
-            core::Builder.CreateStore(buf_ptr, core::Builder.CreateGEP(xt, {core::GetIndex(0), core::GetIndex(dict::XtColon)}));
+            core::Builder.CreateStore(xts_ptr, core::Builder.CreateGEP(xt, {core::GetIndex(0), core::GetIndex(dict::XtColon)}));
             core::Builder.CreateStore(xt, dict::LastXt);
             CreateBrNext();
         });

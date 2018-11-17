@@ -22,8 +22,12 @@
 .number:
     drop
     inbuf number
+
     state @
     branch0 .start
+
+    lit lit , ,
+    branch .start
 
 .end:
     bye
