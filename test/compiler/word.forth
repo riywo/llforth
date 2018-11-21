@@ -1,4 +1,4 @@
-\ RUN: llforthc %s > %t && echo 'w1' | %{lli} %t | FileCheck %s
+\ RUN: %{compile} %t && echo 'w1' | %t | FileCheck %s
 
 inbuf word
 .

@@ -1,4 +1,4 @@
-\ RUN: llforthc %s | %{lli} | FileCheck %s
+\ RUN: %{compile} %t && %t | FileCheck %s
 
 branch .bar
 .foo:

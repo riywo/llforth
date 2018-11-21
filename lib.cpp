@@ -6,5 +6,5 @@
 #include "lib.h"
 
 void print_int(long long int n) {
-    printf("%lld ", n);
+    std::cout << n << " ";
 }

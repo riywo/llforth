@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.10)
 project(llforth)
 
 set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_VERBOSE_MAKEFILE on)
 
 find_package(LLVM REQUIRED CONFIG)
 
@@ -10,8 +11,7 @@ add_definitions(${LLVM_DEFINITIONS})
 
 llvm_map_components_to_libnames(llvm_libs core)
 
-add_library(lib STATIC lib.c)
-add_library(lib_shared SHARED lib.c)
+add_library(lib STATIC lib.cpp)
 add_executable(lib_test test/lib_test.cpp)
 target_link_libraries(lib_test lib gtest_main)
 
@@ -19,18 +19,24 @@ add_executable(llforthc compiler.cpp)
 target_link_libraries(llforthc ${llvm_libs})
 
 add_custom_target(test-compiler
-        COMMAND lit -a --path ${LLVM_TOOLS_BINARY_DIR} --path $<TARGET_FILE_DIR:llforthc> --param lib=$<TARGET_LINKER_FILE:lib_shared> ../test/compiler
-        DEPENDS llforthc test/compiler/*.forth lib_shared
+        COMMAND lit -a --path ${LLVM_TOOLS_BINARY_DIR} --path $<TARGET_FILE_DIR:llforthc> --param lib=$<TARGET_LINKER_FILE:lib> ../test/compiler
+        DEPENDS llforthc test/compiler/*.forth lib
 )
 
 add_executable(llforth llforth.o)
-target_link_libraries(llforth lib ${llvm_libs})
+target_link_libraries(llforth lib)
+set_target_properties(llforth PROPERTIES LINKER_LANGUAGE CXX)
 add_custom_command(
-        OUTPUT llfoth.ll llforth.o
+        OUTPUT llforth.ll
         DEPENDS llforthc interpreter.forth test-compiler
         COMMAND $<TARGET_FILE:llforthc> ../interpreter.forth > llforth.ll
+)
+add_custom_command(
+        OUTPUT llforth.o
+        DEPENDS llforth.ll lib
         COMMAND ${LLVM_TOOLS_BINARY_DIR}/llc -filetype=obj llforth.ll
 )
+
 
 add_custom_target(test-interpreter
         COMMAND lit --path ${LLVM_TOOLS_BINARY_DIR} --path $<TARGET_FILE_DIR:llforthc> ../test/interpreter
