@@ -20,7 +20,7 @@ target_link_libraries(llforthc ${llvm_libs})
 
 add_custom_target(test-compiler
         COMMAND lit -a --path ${LLVM_TOOLS_BINARY_DIR} --path $<TARGET_FILE_DIR:llforthc> --param lib=$<TARGET_LINKER_FILE:lib> ../test/compiler
-        DEPENDS llforthc test/compiler/*.forth lib
+        DEPENDS llforthc test/compiler/*.fs lib
 )
 
 add_executable(llforth llforth.o)
@@ -28,8 +28,8 @@ target_link_libraries(llforth lib)
 set_target_properties(llforth PROPERTIES LINKER_LANGUAGE CXX)
 add_custom_command(
         OUTPUT llforth.ll
-        DEPENDS llforthc interpreter.forth test-compiler
-        COMMAND $<TARGET_FILE:llforthc> ../interpreter.forth > llforth.ll
+        DEPENDS llforthc interpreter.fs test-compiler
+        COMMAND $<TARGET_FILE:llforthc> ../interpreter.fs > llforth.ll
 )
 add_custom_command(
         OUTPUT llforth.o
