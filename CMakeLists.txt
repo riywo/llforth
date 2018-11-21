@@ -25,7 +25,6 @@ add_custom_target(test-compiler
 
 add_executable(llforth llforth.o)
 target_link_libraries(llforth lib)
-set_target_properties(llforth PROPERTIES LINKER_LANGUAGE CXX)
 add_custom_command(
         OUTPUT llforth.ll
         DEPENDS llforthc interpreter.fs test-compiler
