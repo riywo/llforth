@@ -1,4 +1,4 @@
-\ RUN: llforthc %s | lli | FileCheck %s
+\ RUN: llforthc %s | %{lli} | FileCheck %s
 
 999999 888888 .S
 . .

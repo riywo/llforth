@@ -1,6 +1,6 @@
 .start:
     inbuf word
-    branch0 .end
+    branch0 .endline
     inbuf find
     dup
     branch0 .number
@@ -29,5 +29,6 @@
     lit lit , ,
     branch .start
 
-.end:
-    bye
+.endline:
+    cr
+    branch .start

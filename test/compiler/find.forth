@@ -1,4 +1,4 @@
-\ RUN: llforthc %s > %t && echo '.' | lli %t | FileCheck %s
+\ RUN: llforthc %s > %t && echo '.' | %{lli} %t | FileCheck %s
 
 9999999
 inbuf word

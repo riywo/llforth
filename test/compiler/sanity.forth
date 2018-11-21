@@ -1,6 +1,5 @@
-\ RUN: llforthc %s | lli | FileCheck %s
+\ RUN: llforthc %s
 
-999999 .
 bye
 
-\ CHECK: 999999
+\ CHECK: define i64 @main()

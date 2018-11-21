@@ -1,4 +1,4 @@
-\ RUN: llforthc %s | lli | FileCheck %s
+\ RUN: llforthc %s | %{lli} | FileCheck %s
 
 1
 branch0 .end

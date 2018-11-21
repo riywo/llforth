@@ -6,6 +6,7 @@
 #define LLVM_FORTH_UTIL_H
 
 #include "core.h"
+#include "dict.h"
 
 namespace util {
     const static auto NullChar = ConstantInt::get(core::CharType, 0);
@@ -54,12 +55,14 @@ namespace util {
         core::Func strcpy = {
                 "strcpy", FunctionType::get(core::StrType, {core::StrType, core::StrType}, false)
         };
+/**
         core::CreateFunction(PrintIntFunc, [=](Function* f, BasicBlock* entry){
             auto arg = f->arg_begin();
             auto fmt = core::Builder.CreateGlobalStringPtr("%lld ");
             core::CallFunction(printf, {fmt, arg});
             core::Builder.CreateRetVoid();
         });
+**/
         core::CreateFunction(PrintStrFunc, [=](Function* f, BasicBlock* entry){
             auto arg = f->arg_begin();
             auto fmt = core::Builder.CreateGlobalStringPtr("%s ");
@@ -92,7 +95,7 @@ namespace util {
             auto c_switch = core::Builder.CreateSwitch(c, check_full);
             c_switch->addCase(core::GetChar(' '), end);
             c_switch->addCase(core::GetChar('\n'), end);
-            c_switch->addCase(core::GetChar(-1), end);
+            //c_switch->addCase(core::GetChar(-1), end);
 
             core::Builder.SetInsertPoint(check_full);
             auto is_full = core::Builder.CreateICmpSGT(index, max_index);
