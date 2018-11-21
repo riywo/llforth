@@ -76,6 +76,7 @@ namespace util {
             auto number = core::CallFunction(strtoll, {str, endptr, base});
             core::Builder.CreateRet(number);
         });
+/**
         core::CreateFunction(ReadWordFunc, [=](Function* f, BasicBlock* entry) {
             auto args = f->arg_begin();
             auto buf = args++;
@@ -114,6 +115,7 @@ namespace util {
             core::Builder.SetInsertPoint(fail);
             core::Builder.CreateRet(core::GetInt(-1));
         });
+**/
         core::CreateFunction(StringEqualFunc, [=](Function* f, BasicBlock* entry) {
             auto args = f->arg_begin();
             auto a_str = args++;
