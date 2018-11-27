@@ -30,5 +30,4 @@
     branch .start
 
 .endline:
-    cr
     branch .start

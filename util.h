@@ -55,14 +55,6 @@ namespace util {
         core::Func strcpy = {
                 "strcpy", FunctionType::get(core::StrType, {core::StrType, core::StrType}, false)
         };
-/**
-        core::CreateFunction(PrintIntFunc, [=](Function* f, BasicBlock* entry){
-            auto arg = f->arg_begin();
-            auto fmt = core::Builder.CreateGlobalStringPtr("%lld ");
-            core::CallFunction(printf, {fmt, arg});
-            core::Builder.CreateRetVoid();
-        });
-**/
         core::CreateFunction(PrintStrFunc, [=](Function* f, BasicBlock* entry){
             auto arg = f->arg_begin();
             auto fmt = core::Builder.CreateGlobalStringPtr("%s ");
@@ -76,46 +68,6 @@ namespace util {
             auto number = core::CallFunction(strtoll, {str, endptr, base});
             core::Builder.CreateRet(number);
         });
-/**
-        core::CreateFunction(ReadWordFunc, [=](Function* f, BasicBlock* entry) {
-            auto args = f->arg_begin();
-            auto buf = args++;
-            auto max_len = args++;
-            auto max_index = core::Builder.CreateSub(max_len, core::GetInt(1));
-            auto loop = core::CreateBasicBlock("loop", f);
-            auto check_full = core::CreateBasicBlock("check_full", f);
-            auto loop_continue = core::CreateBasicBlock("loop_continue", f);
-            auto end = core::CreateBasicBlock("end", f);
-            auto fail = core::CreateBasicBlock("fail", f);
-            core::Builder.CreateBr(loop);
-
-            core::Builder.SetInsertPoint(loop);
-            auto index = core::Builder.CreatePHI(core::IntType, 2);
-            index->addIncoming(core::GetInt(0), entry);
-            auto c = core::CallFunction(getchar);
-            auto c_switch = core::Builder.CreateSwitch(c, check_full);
-            c_switch->addCase(core::GetChar(' '), end);
-            c_switch->addCase(core::GetChar('\n'), end);
-            //c_switch->addCase(core::GetChar(-1), end);
-
-            core::Builder.SetInsertPoint(check_full);
-            auto is_full = core::Builder.CreateICmpSGT(index, max_index);
-            core::Builder.CreateCondBr(is_full, fail, loop_continue);
-
-            core::Builder.SetInsertPoint(loop_continue);
-            core::Builder.CreateStore(c, core::Builder.CreateGEP(buf, index));
-            auto next_index = core::Builder.CreateAdd(index, core::GetInt(1));
-            index->addIncoming(next_index, loop_continue);
-            core::Builder.CreateBr(loop);
-
-            core::Builder.SetInsertPoint(end);
-            core::Builder.CreateStore(NullChar, core::Builder.CreateGEP(buf, index));
-            core::Builder.CreateRet(index);
-
-            core::Builder.SetInsertPoint(fail);
-            core::Builder.CreateRet(core::GetInt(-1));
-        });
-**/
         core::CreateFunction(StringEqualFunc, [=](Function* f, BasicBlock* entry) {
             auto args = f->arg_begin();
             auto a_str = args++;
