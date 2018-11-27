@@ -34,7 +34,7 @@ add_custom_target(test-compiler
 )
 
 add_executable(llforth llforth.o)
-set_target_properties(llforth PROPERTIES LINKER_LANGUAGE CXX)
+set_target_properties(llforth PROPERTIES LINKER_LANGUAGE C)
 target_link_libraries(llforth lib)
 add_custom_command(
         OUTPUT llforth.ll
