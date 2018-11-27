@@ -61,6 +61,12 @@ namespace util {
             core::CallFunction(printf, {fmt, arg});
             core::Builder.CreateRetVoid();
         });
+        core::CreateFunction(PrintIntFunc, [=](Function* f, BasicBlock* entry){
+            auto arg = f->arg_begin();
+            auto fmt = core::Builder.CreateGlobalStringPtr("%lld ");
+            core::CallFunction(printf, {fmt, arg});
+            core::Builder.CreateRetVoid();
+        });
         core::CreateFunction(StringToIntFunc, [=](Function* f, BasicBlock* entry){
             auto str = f->arg_begin();
             auto endptr = core::Builder.CreateAlloca(core::StrType);

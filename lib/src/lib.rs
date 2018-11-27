@@ -16,6 +16,7 @@ lazy_static! {
     static ref PROMPT: Mutex<Prompt> = Mutex::new(Prompt::new());
 }
 
+
 #[no_mangle]
 pub extern fn read_word(inbuf_ptr: *mut c_char, max_len: i64) -> i64 {
     let inbuf = unsafe { slice::from_raw_parts_mut(inbuf_ptr, max_len as usize) };

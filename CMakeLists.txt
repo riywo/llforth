@@ -11,10 +11,17 @@ add_definitions(${LLVM_DEFINITIONS})
 
 llvm_map_components_to_libnames(llvm_libs core)
 
-add_library(lib STATIC lib.cpp)
+add_custom_target(lib_target
+        DEPENDS ${CMAKE_SOURCE_DIR}/lib/*
+        COMMAND cargo build --release
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/lib
+)
+add_library(lib STATIC IMPORTED)
+add_dependencies(lib lib_target)
+set_property(TARGET lib PROPERTY IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/lib/target/release/liblib.a)
 
 add_executable(llforthc compiler.cpp)
-target_link_libraries(llforthc ${llvm_libs})
+target_link_libraries(llforthc ${llvm_libs} lib)
 
 add_custom_target(test-compiler
         COMMAND lit -a --path ${LLVM_TOOLS_BINARY_DIR} --path $<TARGET_FILE_DIR:llforthc> --param lib=$<TARGET_LINKER_FILE:lib> ../test/compiler
@@ -22,6 +29,7 @@ add_custom_target(test-compiler
 )
 
 add_executable(llforth llforth.o)
+set_target_properties(llforth PROPERTIES LINKER_LANGUAGE CXX)
 target_link_libraries(llforth lib)
 add_custom_command(
         OUTPUT llforth.ll
