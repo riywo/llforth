@@ -10,7 +10,6 @@ pub struct Prompt {
     buffer: VecDeque<Input>,
 }
 
-#[derive(Debug)]
 pub enum Input {
     Word(String),
     Enter,
