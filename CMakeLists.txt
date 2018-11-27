@@ -43,7 +43,7 @@ add_custom_command(
 )
 add_custom_command(
         OUTPUT llforth.o
-        DEPENDS llforth.ll lib
+        DEPENDS llforth.ll
         COMMAND ${LLVM_TOOLS_BINARY_DIR}/llc -filetype=obj llforth.ll
 )
 
