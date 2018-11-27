@@ -49,6 +49,6 @@ add_custom_command(
 
 
 add_custom_target(test-interpreter
-        COMMAND lit --path ${LLVM_TOOLS_BINARY_DIR} --path $<TARGET_FILE_DIR:llforthc> ../test/interpreter
+        COMMAND lit -a --path ${LLVM_TOOLS_BINARY_DIR} --path $<TARGET_FILE_DIR:llforthc> ../test/interpreter
         DEPENDS llforth
 )
