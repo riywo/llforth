@@ -33,6 +33,9 @@ namespace dict {
         XtPrevious, XtWord, XtImplAddress, XtColon, XtImmediate,
     };
 
+    static Constant* Memory;
+    static Constant* HereValue;
+
     struct Word {
         Constant* xt;
         BlockAddress* addr;
@@ -108,6 +111,10 @@ namespace dict {
     };
 
     static void Initialize(Function* main, BasicBlock* entry) {
+        Memory = core::CreateGlobalArrayVariable("dict_memory", XtPtrType, 1024, false);
+        auto memory_start = core::CreateConstantGEP(Memory);
+        HereValue = core::CreateGlobalVariable("here", XtPtrPtrType, memory_start, false);
+
         engine::PC = core::Builder.CreateAlloca(XtPtrPtrType, nullptr, "pc");
         engine::W = core::Builder.CreateAlloca(XtPtrType, nullptr, "w");
         LastXt = core::CreateGlobalVariable("last_xt", XtPtrType);
