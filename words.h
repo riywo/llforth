@@ -121,7 +121,7 @@ namespace words {
             core::Builder.CreateStore(new_pc, engine::PC);
             CreateBrNext();
         });
-        Branch0 = dict::AddNativeWord("branch0", [](){
+        Branch0 = dict::AddNativeWord("0branch", [](){
             auto is_zero = core::Builder.CreateICmpEQ(stack::Pop(), core::GetInt(0));
             core::Builder.CreateCondBr(is_zero, Branch.block, Skip.block);
         });
@@ -223,7 +223,6 @@ namespace words {
             Branch0.xt, GetConstantIntToXtPtr(-4),
             Inbuf.xt, Create.xt,
             Lit.xt, GetConstantIntToXtPtr(1), State.xt, Write.xt,
-            // TODO
             Exit.xt,
         });
         dict::AddColonWord(";", Docol.addr, {

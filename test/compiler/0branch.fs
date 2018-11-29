@@ -1,11 +1,11 @@
 \ RUN: %{compile} %t && %t | FileCheck %s
 
 1
-branch0 .end
+0branch .end
 999999 .
 
 0
-branch0 .end
+0branch .end
 777777 .
 
 .end:

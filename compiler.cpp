@@ -48,7 +48,7 @@ static void MainLoop(std::istream& input, std::vector<Constant*>* code) {
                 std::string goto_label;
                 linestream >> goto_label;
                 token = {Token::Type::Br, words::Branch.xt, goto_label};
-            } else if (str == "branch0") {
+            } else if (str == "0branch") {
                 std::string goto_label;
                 linestream >> goto_label;
                 token = {Token::Type::Br, words::Branch0.xt, goto_label};

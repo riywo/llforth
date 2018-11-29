@@ -1,15 +1,15 @@
 .start:
     inbuf word
-    branch0 .endline
+    0branch .endline
     inbuf find
     dup
-    branch0 .number
+    0branch .number
 
     state @
-    branch0 .interpreting
+    0branch .interpreting
 
     dup flag
-    branch0 .compiling
+    0branch .compiling
 
 .interpreting:
     execute
@@ -24,7 +24,7 @@
     inbuf number
 
     state @
-    branch0 .start
+    0branch .start
 
     lit lit , ,
     branch .start
