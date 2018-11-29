@@ -205,19 +205,18 @@ namespace words {
             core::Builder.CreateStore(core::GetBool(false), core::Builder.CreateGEP(xt, {core::GetIndex(0), core::GetIndex(dict::XtImmediate)}));
             stack::PushPtr(xt);
             core::Builder.CreateStore(core::GetIndex(0), HereValue);
+            core::Builder.CreateStore(xt, dict::LastXt);
             CreateBrNext();
         });
         Finish = dict::AddNativeWord("finish", [](){
             auto length = core::Builder.CreateLoad(HereValue);
             auto xts = core::Builder.CreateAlloca(dict::XtPtrType, length);
             auto xts_ptr = core::Builder.CreateGEP(xts, core::GetIndex(0));
-            core::Builder.CreateStore(Exit.xt, xts_ptr);
             auto buf_ptr = core::Builder.CreateGEP(ColonBuffer, {core::GetIndex(0), core::GetIndex(0)});
             core::Builder.CreateMemCpy(xts_ptr, 4, buf_ptr, 4, core::Builder.CreateMul(length, core::GetIndex(8)));
 
             auto xt = stack::PopPtr(dict::XtPtrType);
             core::Builder.CreateStore(xts_ptr, core::Builder.CreateGEP(xt, {core::GetIndex(0), core::GetIndex(dict::XtColon)}));
-            core::Builder.CreateStore(xt, dict::LastXt);
             CreateBrNext();
         });
         dict::AddNativeWord("flag", [](){

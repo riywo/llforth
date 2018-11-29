@@ -18,12 +18,12 @@ add_custom_target(lib_test
         )
 add_custom_target(lib_target
         DEPENDS ${CMAKE_SOURCE_DIR}/lib/* lib_test
-        COMMAND cargo build --release
+        COMMAND cargo build
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/lib
 )
 add_library(lib STATIC IMPORTED)
-add_dependencies(lib lib_target)
-set_property(TARGET lib PROPERTY IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/lib/target/release/liblib.a)
+#add_dependencies(lib lib_target)
+set_property(TARGET lib PROPERTY IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/lib/target/debug/liblib.a)
 
 add_executable(llforthc compiler.cpp)
 target_link_libraries(llforthc ${llvm_libs})
