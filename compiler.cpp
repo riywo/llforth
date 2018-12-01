@@ -117,6 +117,7 @@ int main(int argc, char* argv[]) {
             words::Initialize,
     };
     engine::Finalizers = {
+            words::Finalize,
             dict::Finalize,
     };
     engine::Initialize();

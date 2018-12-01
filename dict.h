@@ -13,12 +13,11 @@ namespace dict {
     static StructType* CreateXtType() {
         auto xt_type = StructType::create(core::TheContext, "xt");
         auto xt_ptr_type = xt_type->getPointerTo();
-        auto xt_ptr_ptr_type = xt_ptr_type->getPointerTo();
         xt_type->setBody({
             xt_ptr_type,     // Previous word
             core::StrType,   // Word of node
             AddressType,     // Implementation address
-            xt_ptr_ptr_type, // Array of xt if colon word
+            core::IndexType,
             core::BoolType,  // Immediate flag
         });
         return xt_type;
@@ -33,6 +32,7 @@ namespace dict {
         XtPrevious, XtWord, XtImplAddress, XtColon, XtImmediate,
     };
 
+    static std::vector<Constant*> InitialMemory = {};
     static Constant* Memory;
     static Constant* HereValue;
 
@@ -48,7 +48,7 @@ namespace dict {
                            BlockAddress* addr, Constant* colon, Constant* flag) {
         if (!lastXt)   { lastXt   = ConstantPointerNull::get(XtPtrType); }
         if (!str)      { str      = ConstantPointerNull::get(core::StrType); }
-        if (!colon)    { colon    = ConstantPointerNull::get(XtPtrPtrType); }
+        if (!colon)    { colon    = core::GetIndex(-1); }
         if (!flag)     { flag     = core::GetBool(false); }
         auto value = ConstantStruct::get(XtType, lastXt, str, addr, colon, flag);
         return core::CreateGlobalVariable("xt_" + word, XtType, value);
@@ -69,17 +69,17 @@ namespace dict {
         impl();
         NativeBlocks.push_back(block);
         auto addr = BlockAddress::get(block);
-        auto str = core::Builder.CreateGlobalStringPtr(word, "w_" + word);
+        auto str = core::Builder.CreateGlobalStringPtr(word);
         auto xt = AddXt(word, _LastXt, str, addr, nullptr, nullptr);
         _LastXt = xt;
         return AddWord(word, xt, addr, block);
     };
 
-    static Word AddColonWord(const std::string& word, BlockAddress* addr, const std::vector<Constant*>& words, bool flag=false) {
-        auto str = core::Builder.CreateGlobalStringPtr(word, "w_" + word);
-        auto words_array = core::CreateGlobalArrayVariable("col_" + word, XtPtrType, words);
-        auto xts = core::CreateConstantGEP(words_array);
-        auto xt = AddXt(word, _LastXt, str, addr, xts, core::GetBool(flag));
+    static Word AddColonWord(const std::string& word, BlockAddress* addr, std::vector<Constant*> words, bool flag=false) {
+        auto str = core::Builder.CreateGlobalStringPtr(word);
+        auto here = core::GetIndex(InitialMemory.size());
+        InitialMemory.insert(InitialMemory.end(), words.begin(), words.end());
+        auto xt = AddXt(word, _LastXt, str, addr, here, core::GetBool(flag));
         _LastXt = xt;
         return AddWord(word, xt, addr);
     };
@@ -111,10 +111,8 @@ namespace dict {
     };
 
     static void Initialize(Function* main, BasicBlock* entry) {
-        Memory = core::CreateGlobalArrayVariable("dict_memory", XtPtrType, 1024, false);
-        auto memory_start = core::CreateConstantGEP(Memory);
-        HereValue = core::CreateGlobalVariable("here", XtPtrPtrType, memory_start, false);
-
+        Memory = core::CreateGlobalVariable("dict_memory", ArrayType::get(XtPtrType, 1024));
+        HereValue = core::CreateGlobalVariable("here", core::IndexType);
         engine::PC = core::Builder.CreateAlloca(XtPtrPtrType, nullptr, "pc");
         engine::W = core::Builder.CreateAlloca(XtPtrType, nullptr, "w");
         LastXt = core::CreateGlobalVariable("last_xt", XtPtrType);
@@ -127,8 +125,10 @@ namespace dict {
     }
 
     static void Finalize(const std::vector<Constant*>& code) {
-        auto code_array = core::CreateGlobalArrayVariable("code", XtPtrType, code);
-        auto start = core::Builder.CreateGEP(code_array, {core::GetIndex(0), core::GetIndex(0)});
+        HereValue = core::CreateGlobalVariable("here", core::IndexType, core::GetIndex(InitialMemory.size()), false);
+        InitialMemory.resize(1024, ConstantPointerNull::get(XtPtrType));
+        Memory = core::CreateGlobalArrayVariable("dict_memory", XtPtrType, InitialMemory, false);
+        auto start = core::Builder.CreateGEP(Memory, {core::GetIndex(0), core::GetIndex(0)});
         core::Builder.CreateStore(start, engine::PC);
         LastXt = core::CreateGlobalVariable("last_xt", XtPtrType, _LastXt, false);
     }

@@ -143,7 +143,8 @@ namespace words {
         });
         Docol = dict::AddNativeWord("docol", [](){
             stack::RPush(core::Builder.CreateLoad(engine::PC));
-            auto new_pc = dict::GetXtColon();
+            auto index = dict::GetXtColon();
+            auto new_pc = core::Builder.CreateGEP(dict::Memory, {core::GetIndex(0), index});
             core::Builder.CreateStore(new_pc, engine::PC);
             CreateBrNext();
         });
@@ -213,29 +214,34 @@ namespace words {
         Comma = dict::AddNativeWord(",", [](){
             auto xt = stack::PopPtr(dict::XtPtrType);
             auto here = core::Builder.CreateLoad(dict::HereValue);
-            core::Builder.CreateStore(xt, here);
-            auto next = core::Builder.CreateGEP(here, core::GetIndex(1));
+            auto here_memory = core::Builder.CreateGEP(dict::Memory, {core::GetIndex(0), here});
+            core::Builder.CreateStore(xt, here_memory);
+            auto next = core::Builder.CreateAdd(here, core::GetIndex(1));
             core::Builder.CreateStore(next, dict::HereValue);
             CreateBrNext();
         });
-        dict::AddColonWord(":", Docol.addr, {
-            Inbuf.xt, Word.xt, Dup.xt,
-            Branch0.xt, GetConstantIntToXtPtr(-4),
-            Inbuf.xt, Create.xt,
-            Lit.xt, GetConstantIntToXtPtr(1), State.xt, Write.xt,
-            Exit.xt,
-        });
-        dict::AddColonWord(";", Docol.addr, {
-            Lit.xt, GetConstantIntToXtPtr(0), State.xt, Write.xt,
-            Lit.xt, Exit.xt, Comma.xt,
-            Exit.xt,
-        }, true);
         dict::AddNativeWord("execute", [](){ // This definition must be the last
             auto xt = stack::PopPtr(dict::XtPtrType);
             core::Builder.CreateStore(xt, engine::W);
             engine::Jump();
         });
     };
+
+    static void Finalize(const std::vector<Constant*>& code) {
+        dict::AddColonWord("main", Docol.addr, code);
+        dict::AddColonWord(":", Docol.addr, {
+                Inbuf.xt, Word.xt, Dup.xt,
+                Branch0.xt, GetConstantIntToXtPtr(-4),
+                Inbuf.xt, Create.xt,
+                Lit.xt, GetConstantIntToXtPtr(1), State.xt, Write.xt,
+                Exit.xt,
+        });
+        dict::AddColonWord(";", Docol.addr, {
+                Lit.xt, GetConstantIntToXtPtr(0), State.xt, Write.xt,
+                Lit.xt, Exit.xt, Comma.xt,
+                Exit.xt,
+        }, true);
+    }
 }
 
 #endif //LLVM_FORTH_WORD_H
