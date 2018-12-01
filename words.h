@@ -18,8 +18,11 @@ namespace words {
     static dict::Word Throw;
     static dict::Word Dot;
     static dict::Word Dup;
+    static dict::Word Swap;
     static dict::Word Fetch;
     static dict::Word Write;
+    static dict::Word Here;
+    static dict::Word HereFetch;
     static dict::Word Docol;
     static dict::Word Inbuf;
     static dict::Word Word;
@@ -65,6 +68,13 @@ namespace words {
         });
         Dup = dict::AddNativeWord("dup", [](){
             stack::Dup();
+            CreateBrNext();
+        });
+        Swap = dict::AddNativeWord("swap", [](){
+            auto first = stack::Pop();
+            auto second = stack::Pop();
+            stack::Push(first);
+            stack::Push(second);
             CreateBrNext();
         });
         dict::AddNativeWord("drop", [](){
@@ -139,6 +149,16 @@ namespace words {
             auto addr = stack::PopPtr(core::IntPtrType);
             auto value = stack::Pop();
             core::Builder.CreateStore(value, addr);
+            CreateBrNext();
+        });
+        Here = dict::AddNativeWord("here", [](){
+            auto here = core::Builder.CreateLoad(dict::HereValue);
+            stack::Push(core::Builder.CreateIntCast(here, core::IntType, true));
+            CreateBrNext();
+        });
+        HereFetch = dict::AddNativeWord("here@", [](){
+            auto here = core::Builder.CreateLoad(dict::HereValue);
+            stack::PushPtr(core::Builder.CreateGEP(dict::Memory, {core::GetIndex(0), here}));
             CreateBrNext();
         });
         Docol = dict::AddNativeWord("docol", [](){
@@ -239,6 +259,16 @@ namespace words {
         dict::AddColonWord(";", Docol.addr, {
                 Lit.xt, GetConstantIntToXtPtr(0), State.xt, Write.xt,
                 Lit.xt, Exit.xt, Comma.xt,
+                Exit.xt,
+        }, true);
+        dict::AddColonWord("if", Docol.addr, {
+                Lit.xt, Branch0.xt, Comma.xt,
+                HereFetch.xt,
+                Lit.xt, GetConstantIntToXtPtr(0), Comma.xt,
+                Exit.xt,
+        }, true);
+        dict::AddColonWord("then", Docol.addr, {
+                Here.xt, Swap.xt, Write.xt,
                 Exit.xt,
         }, true);
     }

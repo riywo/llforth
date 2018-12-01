@@ -59,10 +59,7 @@ namespace dict {
     };
 
     static Word AddWord(const std::string& word, Constant* xt, BlockAddress* addr, BasicBlock* block=nullptr) {
-        Word w;
-        w.xt = xt;
-        w.addr = addr;
-        w.block = block;
+        Word w{xt, addr, block};
         Dictionary[word] = w;
         return w;
     };
