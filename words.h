@@ -111,7 +111,7 @@ namespace words {
             auto pc = core::Builder.CreateLoad(engine::PC);
             auto value = core::Builder.CreateLoad(pc);
             auto offset = core::Builder.CreatePtrToInt(value, core::IndexType);
-            auto new_pc = core::Builder.CreateGEP(pc, offset);
+            auto new_pc = core::Builder.CreateGEP(dict::Memory, {core::GetIndex(0), offset});
             core::Builder.CreateStore(new_pc, engine::PC);
             CreateBrNext();
         });
@@ -231,7 +231,7 @@ namespace words {
         dict::AddColonWord("main", Docol.addr, code);
         dict::AddColonWord(":", Docol.addr, {
                 Inbuf.xt, Word.xt, Dup.xt,
-                Branch0.xt, GetConstantIntToXtPtr(-4),
+                Branch0.xt, 0,
                 Inbuf.xt, Create.xt,
                 Lit.xt, GetConstantIntToXtPtr(1), State.xt, Write.xt,
                 Exit.xt,

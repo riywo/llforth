@@ -83,7 +83,7 @@ static void MainLoop(std::istream& input, std::vector<std::variant<Constant*,int
         }
     }
     for (auto c: inner_codes) {
-        Constant* xt;
+        std::variant<Constant*,int> xt;
         switch (c.type) {
             case Code::Type::Word: {
                 xt = c.xt;
@@ -94,9 +94,7 @@ static void MainLoop(std::istream& input, std::vector<std::variant<Constant*,int
                 if (found == labels.end()) {
                     exit(-1);
                 } else {
-                    int label_idx = (int)found->second;
-                    int offset = label_idx - (int)code->size();
-                    xt = words::GetConstantIntToXtPtr(offset);
+                    xt = (int)found->second;
                 }
                 break;
             }
