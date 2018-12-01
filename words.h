@@ -227,7 +227,7 @@ namespace words {
         });
     };
 
-    static void Finalize(const std::vector<Constant*>& code) {
+    static void Finalize(const std::vector<std::variant<Constant*,int>>& code) {
         dict::AddColonWord("main", Docol.addr, code);
         dict::AddColonWord(":", Docol.addr, {
                 Inbuf.xt, Word.xt, Dup.xt,

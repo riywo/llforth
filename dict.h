@@ -44,6 +44,10 @@ namespace dict {
     static std::vector<BasicBlock*> NativeBlocks = {};
     static std::map<std::string, Word> Dictionary = {};
 
+    static Constant* GetConstantIntToXtPtr(int num) {
+        return ConstantExpr::getIntToPtr(ConstantInt::get(core::IntType, num), XtPtrType);
+    }
+
     static Constant* AddXt(const std::string& word, Constant* lastXt, Constant* str,
                            BlockAddress* addr, Constant* colon, Constant* flag) {
         if (!lastXt)   { lastXt   = ConstantPointerNull::get(XtPtrType); }
@@ -75,10 +79,21 @@ namespace dict {
         return AddWord(word, xt, addr, block);
     };
 
-    static Word AddColonWord(const std::string& word, BlockAddress* addr, std::vector<Constant*> words, bool flag=false) {
+    static Word AddColonWord(const std::string& word, BlockAddress* addr, std::vector<std::variant<Constant*,int>> words, bool flag=false) {
         auto str = core::Builder.CreateGlobalStringPtr(word);
-        auto here = core::GetIndex(InitialMemory.size());
-        InitialMemory.insert(InitialMemory.end(), words.begin(), words.end());
+        auto start = InitialMemory.size();
+        auto here = core::GetIndex(start);
+        std::vector<Constant*> compiled_words = {};
+        for (auto word: words) {
+            try {
+                auto i = std::get<int>(word);
+                compiled_words.push_back(GetConstantIntToXtPtr(start + i));
+            }
+            catch (const std::bad_variant_access&) {
+                compiled_words.push_back(std::get<Constant*>(word));
+            }
+        }
+        InitialMemory.insert(InitialMemory.end(), compiled_words.begin(), compiled_words.end());
         auto xt = AddXt(word, _LastXt, str, addr, here, core::GetBool(flag));
         _LastXt = xt;
         return AddWord(word, xt, addr);
@@ -124,7 +139,7 @@ namespace dict {
         };
     }
 
-    static void Finalize(const std::vector<Constant*>& code) {
+    static void Finalize(const std::vector<std::variant<Constant*,int>>& code) {
         HereValue = core::CreateGlobalVariable("here", core::IndexType, core::GetIndex(InitialMemory.size()), false);
         InitialMemory.resize(1024, ConstantPointerNull::get(XtPtrType));
         Memory = core::CreateGlobalArrayVariable("dict_memory", XtPtrType, InitialMemory, false);

@@ -15,7 +15,7 @@ namespace engine {
     static Value* W;
 
     static std::vector<std::function<void(Function*, BasicBlock*)>> Initializers = {};
-    static std::vector<std::function<void(const std::vector<Constant*>&)>> Finalizers = {};
+    static std::vector<std::function<void(const std::vector<std::variant<Constant*,int>>&)>> Finalizers = {};
     static std::function<void()> Jump;
 
     static void Initialize() {
@@ -30,7 +30,7 @@ namespace engine {
         }
     };
 
-    static void Finalize(const std::vector<Constant*>& code) {
+    static void Finalize(const std::vector<std::variant<Constant*,int>>& code) {
         for (const auto finalizer: Finalizers) {
             core::Builder.SetInsertPoint(Entry);
             finalizer(code);

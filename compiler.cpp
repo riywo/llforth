@@ -34,7 +34,7 @@ static Token ParseWord(const std::string& str) {
     }
 }
 
-static void MainLoop(std::istream& input, std::vector<Constant*>* code) {
+static void MainLoop(std::istream& input, std::vector<std::variant<Constant*,int>>* code) {
     std::string line;
     std::vector<Token> tokens = {};
     while (std::getline(input, line)) {
@@ -121,7 +121,7 @@ int main(int argc, char* argv[]) {
             dict::Finalize,
     };
     engine::Initialize();
-    auto code = std::vector<Constant*>();
+    auto code = std::vector<std::variant<Constant*,int>>();
     if (argc > 1) {
         std::ifstream input(argv[1]);
         if (input) {
