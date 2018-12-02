@@ -245,10 +245,6 @@ namespace words {
             core::Builder.CreateStore(xt, engine::W);
             engine::Jump();
         });
-    };
-
-    static void Finalize(const std::vector<std::variant<Constant*,int>>& code) {
-        dict::AddColonWord("main", Docol.addr, code);
         dict::AddColonWord(":", Docol.addr, {
                 Inbuf.xt, Word.xt, Dup.xt,
                 Branch0.xt, 0,
@@ -278,7 +274,7 @@ namespace words {
                 Here.xt, Swap.xt, Write.xt,
                 Exit.xt,
         }, true);
-    }
+    };
 }
 
 #endif //LLVM_FORTH_WORD_H

@@ -14,13 +14,13 @@ struct Token {
     std::string value;
 };
 
-struct Code {
+struct Node {
     enum Type {Word, Int, GotoLabel} type;
     Constant* xt;
     std::string value;
 };
 
-static Token ParseWord(const std::string& str) {
+static Token StringToToken(const std::string& str) {
     std::smatch label_match;
     if (std::regex_match(str, label_match, std::regex("(\\..+):"))) {
         return {Token::Type::Label, nullptr, label_match[1]};
@@ -34,7 +34,7 @@ static Token ParseWord(const std::string& str) {
     }
 }
 
-static void MainLoop(std::istream& input, std::vector<std::variant<Constant*,int>>* code) {
+static std::vector<Token> Tokenize(std::istream& input) {
     std::string line;
     std::vector<Token> tokens = {};
     while (std::getline(input, line)) {
@@ -53,58 +53,75 @@ static void MainLoop(std::istream& input, std::vector<std::variant<Constant*,int
                 linestream >> goto_label;
                 token = {Token::Type::Br, words::Branch0.xt, goto_label};
             } else {
-                token = ParseWord(str);
+                token = StringToToken(str);
             }
             tokens.push_back(token);
         }
     }
-    std::vector<Code> inner_codes = {};
-    std::map<std::string, unsigned long> labels = {};
+    return tokens;
+}
+
+static std::tuple<std::vector<Node>,std::map<std::string, int>> Parse(const std::vector<Token>& tokens) {
+    std::vector<Node> nodes = {};
+    std::map<std::string, int> labels = {};
     for (auto token: tokens) {
         switch (token.type) {
             case Token::Type::Word: {
-                inner_codes.push_back(Code {Code::Type::Word, token.xt});
+                nodes.push_back(Node {Node::Type::Word, token.xt});
                 break;
             }
             case Token::Type::Br: {
-                inner_codes.push_back(Code {Code::Type::Word, token.xt});
-                inner_codes.push_back(Code {Code::Type::GotoLabel, nullptr, token.value});
+                nodes.push_back(Node {Node::Type::Word, token.xt});
+                nodes.push_back(Node {Node::Type::GotoLabel, nullptr, token.value});
                 break;
             }
             case Token::Type::Label: {
-                labels[token.value] = inner_codes.size();
+                labels[token.value] = (int)nodes.size();
                 break;
             }
             case Token::Type::Int: {
-                inner_codes.push_back(Code {Code::Type::Word, token.xt});
-                inner_codes.push_back(Code {Code::Type::Int, nullptr, token.value});
+                nodes.push_back(Node {Node::Type::Word, token.xt});
+                nodes.push_back(Node {Node::Type::Int, nullptr, token.value});
                 break;
             }
         }
     }
-    for (auto c: inner_codes) {
+    return std::make_tuple(nodes, labels);
+}
+
+static std::vector<std::variant<Constant*,int>> Compile(const std::vector<Node>& nodes, const std::map<std::string, int>& labels) {
+    std::vector<std::variant<Constant*,int>> codes = {};
+    for (auto node: nodes) {
         std::variant<Constant*,int> xt;
-        switch (c.type) {
-            case Code::Type::Word: {
-                xt = c.xt;
+        switch (node.type) {
+            case Node::Type::Word: {
+                xt = node.xt;
                 break;
             }
-            case Code::Type::GotoLabel: {
-                auto found = labels.find(c.value);
+            case Node::Type::GotoLabel: {
+                auto found = labels.find(node.value);
                 if (found == labels.end()) {
                     exit(-1);
                 } else {
-                    xt = (int)found->second;
+                    xt = found->second;
                 }
                 break;
             }
-            case Code::Type::Int: {
-                xt = words::GetConstantIntToXtPtr(std::stoi(c.value));
+            case Node::Type::Int: {
+                xt = words::GetConstantIntToXtPtr(std::stoi(node.value));
                 break;
             }
         }
-        code->push_back(xt);
+        codes.push_back(xt);
     }
+    return codes;
+}
+
+static void MainLoop(std::istream& input) {
+    auto tokens = Tokenize(input);
+    auto [nodes, labels] = Parse(tokens);
+    auto code = Compile(nodes, labels);
+    dict::AddColonWord("main", words::Docol.addr, code);
 }
 
 int main(int argc, char* argv[]) {
@@ -115,7 +132,6 @@ int main(int argc, char* argv[]) {
             words::Initialize,
     };
     engine::Finalizers = {
-            words::Finalize,
             dict::Finalize,
     };
     engine::Initialize();
@@ -123,13 +139,13 @@ int main(int argc, char* argv[]) {
     if (argc > 1) {
         std::ifstream input(argv[1]);
         if (input) {
-            MainLoop(input, &code);
+            MainLoop(input);
         } else {
             std::cerr << "No such file: " << argv[1] << std::endl;
             exit(1);
         }
     } else {
-        MainLoop(std::cin, &code);
+        MainLoop(std::cin);
     }
     engine::Finalize(code);
     core::DumpModule();
