@@ -1,3 +1,5 @@
+: main
+
 .start:
     inbuf word
     0branch .endline
@@ -32,3 +34,5 @@
 .endline:
     cr
     branch .start
+
+;
