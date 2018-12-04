@@ -2,6 +2,13 @@
 : else ' branch , here@ 0 , swap here swap ! ; immediate
 : then here swap ! ; immediate
 
+: begin here ; immediate
+: until ' 0branch , , ; immediate
+
+: 0> 0 > ;
+: 0< 0 < ;
+: 0= 0 = ;
+
 : main
 
 .start:

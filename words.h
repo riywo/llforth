@@ -109,6 +109,41 @@ namespace words {
             stack::Push(core::Builder.CreateSDiv(left, right));
             CreateBrNext();
         });
+        dict::AddNativeWord(">", [](){
+            auto right = stack::Pop();
+            auto left = stack::Pop();
+            auto icmp = core::Builder.CreateICmpSGT(left, right);
+            stack::Push(core::Builder.CreateIntCast(icmp, core::IntType, true));
+            CreateBrNext();
+        });
+        dict::AddNativeWord("<", [](){
+            auto right = stack::Pop();
+            auto left = stack::Pop();
+            auto icmp = core::Builder.CreateICmpSLT(left, right);
+            stack::Push(core::Builder.CreateIntCast(icmp, core::IntType, true));
+            CreateBrNext();
+        });
+        dict::AddNativeWord(">=", [](){
+            auto right = stack::Pop();
+            auto left = stack::Pop();
+            auto icmp = core::Builder.CreateICmpSGE(left, right);
+            stack::Push(core::Builder.CreateIntCast(icmp, core::IntType, true));
+            CreateBrNext();
+        });
+        dict::AddNativeWord("<=", [](){
+            auto right = stack::Pop();
+            auto left = stack::Pop();
+            auto icmp = core::Builder.CreateICmpSLE(left, right);
+            stack::Push(core::Builder.CreateIntCast(icmp, core::IntType, true));
+            CreateBrNext();
+        });
+        dict::AddNativeWord("=", [](){
+            auto right = stack::Pop();
+            auto left = stack::Pop();
+            auto icmp = core::Builder.CreateICmpEQ(left, right);
+            stack::Push(core::Builder.CreateIntCast(icmp, core::IntType, true));
+            CreateBrNext();
+        });
         Lit = dict::AddNativeWord("lit", [](){
             auto pc = core::Builder.CreateLoad(engine::PC);
             auto value = core::Builder.CreateLoad(pc);
