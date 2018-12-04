@@ -70,11 +70,24 @@ namespace words {
             stack::Dup();
             CreateBrNext();
         });
+        dict::AddNativeWord("over", [](){
+            stack::Over();
+            CreateBrNext();
+        });
         Swap = dict::AddNativeWord("swap", [](){
             auto first = stack::Pop();
             auto second = stack::Pop();
             stack::Push(first);
             stack::Push(second);
+            CreateBrNext();
+        });
+        dict::AddNativeWord("rot", [](){
+            auto first = stack::Pop();
+            auto second = stack::Pop();
+            auto third = stack::Pop();
+            stack::Push(second);
+            stack::Push(first);
+            stack::Push(third);
             CreateBrNext();
         });
         dict::AddNativeWord("drop", [](){
@@ -194,6 +207,41 @@ namespace words {
         HereFetch = dict::AddNativeWord("here@", [](){
             auto here = core::Builder.CreateLoad(dict::HereValue);
             stack::PushPtr(core::Builder.CreateGEP(dict::Memory, {core::GetIndex(0), here}));
+            CreateBrNext();
+        });
+        dict::AddNativeWord(">r", [](){
+            stack::RPush(stack::PopPtr(dict::XtPtrPtrType));
+            CreateBrNext();
+        });
+        dict::AddNativeWord("r>", [](){
+            stack::PushPtr(stack::RPop());
+            CreateBrNext();
+        });
+        dict::AddNativeWord("r@", [](){
+            stack::RDup();
+            stack::PushPtr(stack::RPop());
+            CreateBrNext();
+        });
+        dict::AddNativeWord("2>r", [](){
+            auto first = stack::PopPtr(dict::XtPtrPtrType);
+            auto second = stack::PopPtr(dict::XtPtrPtrType);
+            stack::RPush(second);
+            stack::RPush(first);
+            CreateBrNext();
+        });
+        dict::AddNativeWord("2r>", [](){
+            auto first = stack::RPop();
+            auto second = stack::RPop();
+            stack::PushPtr(second);
+            stack::PushPtr(first);
+            CreateBrNext();
+        });
+        dict::AddNativeWord("i", [](){
+            stack::PushPtr(stack::RPick(core::GetInt(1)));
+            CreateBrNext();
+        });
+        dict::AddNativeWord("j", [](){
+            stack::PushPtr(stack::RPick(core::GetInt(3)));
             CreateBrNext();
         });
         Docol = dict::AddNativeWord("docol", [](){

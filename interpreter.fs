@@ -10,9 +10,16 @@
 : 0= 0 = ;
 : 1+ 1 + ;
 
+: 2dup over over ;
+: 2drop drop drop ;
+
 : while ' 0branch , here@ 0 , ; immediate
 : repeat ' branch , here 1+ swap ! , ; immediate
 : leave ' branch , here@ swap 0 , ; immediate
+
+: do here ' >r , ' >r , ; immediate
+: loop ' r> , ' r> , ' 1+ , ' 2dup , ' = , ' 0branch , , ' 2drop , ; immediate
+: +loop ' r> , ' r> , ' rot , ' + , ' 2dup , ' = , ' 0branch , , ' 2drop , ; immediate
 
 : main
 

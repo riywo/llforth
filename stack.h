@@ -54,6 +54,15 @@ namespace stack {
         core::Builder.CreateStore(core::Builder.CreateAdd(current_sp, core::GetIndex(1)), SP);
     }
 
+    static void Over() {
+        auto current_sp = core::Builder.CreateLoad(SP);
+        auto current_addr = core::Builder.CreateGEP(Stack, {core::GetIndex(0), current_sp});
+        auto second_sp = core::Builder.CreateSub(current_sp, core::GetIndex(2));
+        auto second_addr = core::Builder.CreateGEP(Stack, {core::GetIndex(0), second_sp});
+        core::Builder.CreateStore(core::Builder.CreateLoad(second_addr), current_addr);
+        core::Builder.CreateStore(core::Builder.CreateAdd(current_sp, core::GetIndex(1)), SP);
+    }
+
     static void Print() {
         auto current_sp = core::Builder.CreateLoad(SP);
         auto top_sp = core::Builder.CreateSub(current_sp, core::GetIndex(1));
@@ -73,6 +82,23 @@ namespace stack {
         auto top_rsp = core::Builder.CreateSub(current_rsp, core::GetIndex(1));
         auto addr = core::Builder.CreateGEP(RStack, {core::GetIndex(0), top_rsp});
         core::Builder.CreateStore(top_rsp, RSP);
+        return core::Builder.CreateLoad(addr);
+    }
+
+    static void RDup() {
+        auto current_rsp = core::Builder.CreateLoad(RSP);
+        auto current_addr = core::Builder.CreateGEP(RStack, {core::GetIndex(0), current_rsp});
+        auto top_rsp = core::Builder.CreateSub(current_rsp, core::GetIndex(1));
+        auto top_addr = core::Builder.CreateGEP(RStack, {core::GetIndex(0), top_rsp});
+        core::Builder.CreateStore(core::Builder.CreateLoad(top_addr), current_addr);
+        core::Builder.CreateStore(core::Builder.CreateAdd(current_rsp, core::GetIndex(1)), RSP);
+    }
+
+    static Value* RPick(Value* n) {
+        auto current_rsp = core::Builder.CreateLoad(RSP);
+        auto offset = core::Builder.CreateAdd(n, core::GetInt(1));
+        auto pick_rsp = core::Builder.CreateSub(current_rsp, core::Builder.CreateIntCast(offset, core::IndexType, true));
+        auto addr = core::Builder.CreateGEP(RStack, {core::GetIndex(0), pick_rsp});
         return core::Builder.CreateLoad(addr);
     }
 

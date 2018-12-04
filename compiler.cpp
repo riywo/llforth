@@ -143,7 +143,7 @@ std::ostream& operator<<(std::ostream& os, const WordDefinition& word) {
     os << word.name << " ";
     //for (auto t: word.tokens) { os << t << ", "; }
     //for (auto p: word.labels) { os << p.first << "=>" << p.second << " "; }
-    for (auto c: word.codes) { os << c << ", "; }
+    for (auto c: word.codes) { os << c << " "; }
     return os;
 }
 
@@ -227,7 +227,7 @@ static void MainLoop(std::istream& input) {
     auto words = Parse(tokens);
     for (auto w: words) {
         w.compile();
-        //std::cerr << w << std::endl;
+        std::cerr << w << std::endl;
     }
 }
 
