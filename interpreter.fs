@@ -8,6 +8,11 @@
 : 0> 0 > ;
 : 0< 0 < ;
 : 0= 0 = ;
+: 1+ 1 + ;
+
+: while ' 0branch , here@ 0 , ; immediate
+: repeat ' branch , here 1+ swap ! , ; immediate
+: leave ' branch , here@ swap 0 , ; immediate
 
 : main
 
