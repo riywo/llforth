@@ -9,7 +9,7 @@
 #include "util.h"
 
 struct Token {
-    enum Type {String, Br, Label, Colon, Semicolon, BrLabel, Immediate} type;
+    enum Type {String, Br, Label, Colon, Semicolon, BrLabel, Immediate, LitToken} type;
     std::string value;
 
     explicit Token(const std::string& str) {
@@ -23,6 +23,7 @@ struct Token {
             else if (str == ";") { type = Semicolon; }
             else if (str == "branch" || str == "0branch") { type = Br; }
             else if (str == "immediate") { type = Immediate; }
+            else if (str == "'") { type = LitToken; }
             else { type = String; }
         }
     }
@@ -42,7 +43,8 @@ static std::vector<Token> Tokenize(std::istream& input) {
             if (str == "\\") {
                 break;
             } else {
-                tokens.emplace_back(Token(str));
+                auto token = Token(str);
+                tokens.emplace_back(token);
             }
         }
     }
@@ -85,7 +87,7 @@ struct WordDefinition {
                 case Token::Type::String: {
                     auto found = dict::Dictionary.find(token.value);
                     if (found == dict::Dictionary.end()) {
-                        codes.push_back(Code{.type=Code::Type::Word, .xt = words::Lit.xt, .value=token.value});
+                        codes.push_back(Code{.type=Code::Type::Word, .xt = words::Lit.xt, .value="lit"});
                         codes.push_back(Code{.type=Code::Type::Int, .xt = words::GetConstantIntToXtPtr(std::stoi(token.value)), .value=token.value});
                     } else {
                         codes.push_back(Code{.type=Code::Type::Word, .xt = found->second.xt, .value = token.value});
@@ -139,8 +141,8 @@ std::ostream& operator<<(std::ostream& os, const WordDefinition::Code& code) {
 
 std::ostream& operator<<(std::ostream& os, const WordDefinition& word) {
     os << word.name << " ";
-    for (auto t: word.tokens) { os << t << ", "; }
-    for (auto p: word.labels) { os << p.first << "=>" << p.second << " "; }
+    //for (auto t: word.tokens) { os << t << ", "; }
+    //for (auto p: word.labels) { os << p.first << "=>" << p.second << " "; }
     for (auto c: word.codes) { os << c << ", "; }
     return os;
 }
@@ -150,6 +152,7 @@ static std::vector<WordDefinition> Parse(const std::vector<Token>& tokens) {
     WordDefinition def;
     bool is_def = false;
     bool is_label = false;
+    bool is_lit_token = false;
     for (auto token: tokens) {
         switch (token.type) {
             case Token::Type::Colon: {
@@ -160,15 +163,21 @@ static std::vector<WordDefinition> Parse(const std::vector<Token>& tokens) {
             }
             case Token::Type::Semicolon: {
                 assert(is_def);
+                def.add_token(Token("exit"));
                 words.push_back(def);
                 is_def = false;
                 break;
             }
             case Token::Type::Br: {
                 assert(is_def);
+                if (is_lit_token) {
+                    is_lit_token = false;
+                } else {
+                    assert(!is_label);
+                    is_label = true;
+                }
                 token.type = Token::Type::String;
                 def.add_token(token);
-                is_label = true;
                 break;
             }
             case Token::Type::String: {
@@ -176,6 +185,9 @@ static std::vector<WordDefinition> Parse(const std::vector<Token>& tokens) {
                 if (is_label) {
                     token.type = Token::Type::BrLabel;
                     is_label = false;
+                }
+                if (is_lit_token) {
+                    is_lit_token = false;
                 }
                 def.add_token(token);
                 break;
@@ -187,7 +199,19 @@ static std::vector<WordDefinition> Parse(const std::vector<Token>& tokens) {
             }
             case Token::Type::Immediate: {
                 assert(!is_def);
-                def.is_immediate = true;
+                auto last_word = words.back();
+                words.pop_back();
+                last_word.is_immediate = true;
+                words.push_back(last_word);
+                break;
+            }
+            case Token::Type::LitToken: {
+                assert(is_def);
+                assert(!is_lit_token);
+                is_lit_token = true;
+                token.type = Token::Type::String;
+                token.value = "lit";
+                def.add_token(token);
                 break;
             }
             default: {
@@ -203,6 +227,7 @@ static void MainLoop(std::istream& input) {
     auto words = Parse(tokens);
     for (auto w: words) {
         w.compile();
+        //std::cerr << w << std::endl;
     }
 }
 

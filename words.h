@@ -257,23 +257,6 @@ namespace words {
                 Lit.xt, Exit.xt, Comma.xt,
                 Exit.xt,
         }, true);
-        dict::AddColonWord("if", Docol.addr, {
-                Lit.xt, Branch0.xt, Comma.xt,
-                HereFetch.xt,
-                Lit.xt, GetConstantIntToXtPtr(0), Comma.xt,
-                Exit.xt,
-        }, true);
-        dict::AddColonWord("else", Docol.addr, {
-                Lit.xt, Branch.xt, Comma.xt,
-                HereFetch.xt,
-                Lit.xt, GetConstantIntToXtPtr(0), Comma.xt,
-                Swap.xt, Here.xt, Swap.xt, Write.xt,
-                Exit.xt,
-        }, true);
-        dict::AddColonWord("then", Docol.addr, {
-                Here.xt, Swap.xt, Write.xt,
-                Exit.xt,
-        }, true);
     };
 }
 

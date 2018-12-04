@@ -1,3 +1,7 @@
+: if ' 0branch , here@ 0 , ; immediate
+: else ' branch , here@ 0 , swap here swap ! ; immediate
+: then here swap ! ; immediate
+
 : main
 
 .start:
