@@ -57,13 +57,13 @@ namespace util {
         };
         core::CreateFunction(PrintStrFunc, [=](Function* f, BasicBlock* entry){
             auto arg = f->arg_begin();
-            auto fmt = core::Builder.CreateGlobalStringPtr("%s ");
+            auto fmt = core::Builder.CreateGlobalStringPtr("%s");
             core::CallFunction(printf, {fmt, arg});
             core::Builder.CreateRetVoid();
         });
         core::CreateFunction(PrintIntFunc, [=](Function* f, BasicBlock* entry){
             auto arg = f->arg_begin();
-            auto fmt = core::Builder.CreateGlobalStringPtr("%lld ");
+            auto fmt = core::Builder.CreateGlobalStringPtr(" %lld");
             core::CallFunction(printf, {fmt, arg});
             core::Builder.CreateRetVoid();
         });
