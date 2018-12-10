@@ -33,7 +33,7 @@
     state @
     0branch .interpreting
 
-    flag
+    flag@
     0branch .compiling
 
 .interpreting:
