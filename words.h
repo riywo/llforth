@@ -273,6 +273,12 @@ namespace words {
             stack::PushPtr(inbuf);
             CreateBrNext();
         });
+        dict::AddNativeWord("inbuf@", [](){
+            auto inbuf = core::Builder.CreateGEP(InputBuffer, {core::GetIndex(0), core::GetIndex(0)});
+            auto c = core::Builder.CreateLoad(inbuf);
+            stack::Push(core::Builder.CreateIntCast(c, core::IntType, true));
+            CreateBrNext();
+        });
         Word = dict::AddNativeWord("word", [](){
             auto buf = stack::PopPtr(core::StrType);
             auto res = core::CallFunction(util::ReadWordFunc, {buf, core::GetInt(1024)});

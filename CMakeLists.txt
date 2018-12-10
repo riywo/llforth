@@ -22,7 +22,7 @@ add_custom_target(lib_target
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/lib
 )
 add_library(lib STATIC IMPORTED)
-#add_dependencies(lib lib_target)
+add_dependencies(lib lib_target)
 set_property(TARGET lib PROPERTY IMPORTED_LOCATION ${CMAKE_SOURCE_DIR}/lib/target/debug/liblib.a)
 
 add_executable(llforthc compiler.cpp)

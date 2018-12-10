@@ -35,6 +35,7 @@
 
     dup flag
     0branch .compiling
+    branch .interpreting
 
 .interpreting:
     execute
@@ -55,7 +56,17 @@
     branch .start
 
 .empty:
+    inbuf@ 10 <>
+    0branch .enter
+    inbuf@ -1 <>
+    0branch .end
+    branch .start
+
+.enter:
     cr
     branch .start
+
+.end:
+    bye
 
 ;

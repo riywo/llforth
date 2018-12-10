@@ -45,10 +45,12 @@ impl Prompt {
                 if ! atty::is(Stream::Stdin) {
                     print!("{}", line);
                 }
-                self.editor.add_history_entry(line.as_ref());
-                for word in line.split(" ") {
-                    let input = Input::Word(String::from(word));
-                    self.buffer.push_back(input);
+                if line != "" {
+                    self.editor.add_history_entry(line.as_ref());
+                    for word in line.split(" ") {
+                        let input = Input::Word(String::from(word));
+                        self.buffer.push_back(input);
+                    }
                 }
                 self.buffer.push_back(Input::Enter);
             },

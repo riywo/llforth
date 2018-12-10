@@ -32,3 +32,8 @@ fn example_2() {
 fn example_empty() {
     run("foo  bar", "foo  bar [(\"foo\", 3), (\"\", 0), (\"bar\", 3)]\n");
 }
+
+#[test]
+fn example_enter() {
+    run("\nfoo", " []\nfoo [(\"foo\", 3)]\n");
+}
