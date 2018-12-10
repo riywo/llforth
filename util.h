@@ -32,9 +32,6 @@ namespace util {
     const static core::Func StringEqualFunc {
         "string_equal", FunctionType::get(core::BoolType, {core::StrType, core::StrType}, false)
     };
-    const static core::Func SkipCommentFunc {
-        "skip_comment", FunctionType::get(core::VoidType, {}, false)
-    };
     const static core::Func PrintStackFunc {
         "print_stack", FunctionType::get(core::VoidType, {core::IndexType, core::IntType->getPointerTo()}, false)
     };
@@ -131,20 +128,6 @@ namespace util {
 
             core::Builder.SetInsertPoint(not_found);
             core::Builder.CreateRet(dict::XtPtrNull);
-        });
-        core::CreateFunction(SkipCommentFunc, [=](Function* f, BasicBlock* entry) {
-            auto loop = core::CreateBasicBlock("loop", f);
-            auto end = core::CreateBasicBlock("end", f);
-            core::Builder.CreateBr(loop);
-
-            core::Builder.SetInsertPoint(loop);
-            auto c = core::CallFunction(getchar);
-            auto c_switch = core::Builder.CreateSwitch(c, loop);
-            c_switch->addCase(core::GetChar('\n'), end);
-            c_switch->addCase(core::GetChar(-1), end);
-
-            core::Builder.SetInsertPoint(end);
-            core::Builder.CreateRetVoid();
         });
         core::CreateFunction(PrintStackFunc, [](Function* f, BasicBlock* entry){
             auto args = f->arg_begin();
