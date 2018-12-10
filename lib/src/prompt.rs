@@ -48,6 +48,7 @@ impl Prompt {
                 if line != "" {
                     self.editor.add_history_entry(line.as_ref());
                     for word in line.split(" ") {
+                        if word == "\\" { break }
                         let input = Input::Word(String::from(word));
                         self.buffer.push_back(input);
                     }
