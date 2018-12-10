@@ -323,7 +323,7 @@ namespace words {
             CreateBrNext();
         });
         dict::AddNativeWord("flag", [](){
-            auto xt = stack::PopPtr(dict::XtPtrType);
+            auto xt = core::Builder.CreateIntToPtr(stack::Peek(), dict::XtPtrType);
             auto flag = dict::GetXtImmediate(xt);
             stack::Push(core::Builder.CreateIntCast(flag, core::IntType, true));
             CreateBrNext();

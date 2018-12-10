@@ -26,6 +26,13 @@ namespace stack {
         Push(core::Builder.CreatePtrToInt(value, core::IntType));
     }
 
+    static LoadInst* Peek() {
+        auto current_sp = core::Builder.CreateLoad(SP);
+        auto top_sp = core::Builder.CreateSub(current_sp, core::GetIndex(1));
+        auto addr = core::Builder.CreateGEP(Stack, {core::GetIndex(0), top_sp});
+        return core::Builder.CreateLoad(addr);
+    }
+
     static LoadInst* Pop() {
         auto current_sp = core::Builder.CreateLoad(SP);
         auto top_sp = core::Builder.CreateSub(current_sp, core::GetIndex(1));

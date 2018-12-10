@@ -33,9 +33,8 @@
     state @
     0branch .interpreting
 
-    dup flag
+    flag
     0branch .compiling
-    branch .interpreting
 
 .interpreting:
     execute
