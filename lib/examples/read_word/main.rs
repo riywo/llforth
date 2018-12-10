@@ -11,10 +11,17 @@ fn main() {
     loop {
         match lib::read_word(inbuf_ptr, 1024) {
             0 => {
-                println!("  ok {:?}", inputs);
-                inputs.clear();
+                match inbuf[0] {
+                    0 => { // Empty
+                        inputs.push((CString::new("").expect(""), 0));
+                    },
+                    10 => { // Enter
+                        println!(" {:?}", inputs);
+                        inputs.clear();
+                    },
+                    _ => return,
+                }
             },
-            -1 => return,
             len => {
                 let c_word = unsafe { CString::from_raw(inbuf_ptr) };
                 inputs.push((c_word.clone(), len));

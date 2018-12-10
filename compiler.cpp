@@ -9,7 +9,16 @@
 #include "util.h"
 
 struct Token {
-    enum Type {String, Br, Label, Colon, Semicolon, BrLabel, Immediate, LitToken} type;
+    enum Type {
+        String,
+        Br,
+        Label,
+        Colon,
+        Semicolon,
+        BrLabel,
+        Immediate,
+        LitToken,
+    } type;
     std::string value;
 
     explicit Token(const std::string& str) {

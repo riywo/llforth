@@ -20,7 +20,6 @@ pub enum Input {
 impl Prompt {
     pub fn new() -> Prompt {
         let config = Config::builder()
-            .disable_flush_newline(true)
             .build();
         Prompt {
             editor: Editor::<()>::with_config(config),
@@ -39,7 +38,7 @@ impl Prompt {
     }
 
     fn read_line(&mut self) {
-        let readline = self.editor.readline("");
+        let readline = self.editor.readline("> ");
         match readline {
             Ok(line) => {
                 let line = line.trim_end();
@@ -48,7 +47,6 @@ impl Prompt {
                 }
                 self.editor.add_history_entry(line.as_ref());
                 for word in line.split(" ") {
-                    if word == "" { continue }
                     let input = Input::Word(String::from(word));
                     self.buffer.push_back(input);
                 }

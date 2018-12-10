@@ -39,6 +39,7 @@ target_link_libraries(llforth lib)
 add_custom_command(
         OUTPUT llforth.ll
         DEPENDS llforthc interpreter.fs test-compiler
+#        DEPENDS llforthc interpreter.fs
         COMMAND $<TARGET_FILE:llforthc> ../interpreter.fs > llforth.ll
 )
 add_custom_command(

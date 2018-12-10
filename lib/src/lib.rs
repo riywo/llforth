@@ -29,7 +29,13 @@ pub extern fn read_word(inbuf_ptr: *mut c_char, max_len: i64) -> i64 {
             inbuf[..=len].clone_from_slice(c_word_bytes);
             return len as i64;
         },
-        Input::Interrupted | Input::Eof => return -1,
-        Input::Enter => return 0,
+        Input::Interrupted | Input::Eof => {
+            inbuf[0] = -1;
+            return 0;
+        },
+        Input::Enter => {
+            inbuf[0] = 10;
+            return 0;
+        }
     }
 }

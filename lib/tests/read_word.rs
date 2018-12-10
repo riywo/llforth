@@ -20,10 +20,15 @@ fn example_0() {
 
 #[test]
 fn example_1() {
-    run("foo", "foo  ok [(\"foo\", 3)]\n");
+    run("foo", "foo [(\"foo\", 3)]\n");
 }
 
 #[test]
 fn example_2() {
-    run("foo bar", "foo bar  ok [(\"foo\", 3), (\"bar\", 3)]\n");
+    run("foo bar", "foo bar [(\"foo\", 3), (\"bar\", 3)]\n");
+}
+
+#[test]
+fn example_empty() {
+    run("foo  bar", "foo  bar [(\"foo\", 3), (\"\", 0), (\"bar\", 3)]\n");
 }

@@ -14,6 +14,9 @@ namespace util {
     const static core::Func PrintIntFunc {
         "print_int", FunctionType::get(core::VoidType, {core::IntType}, false)
     };
+    const static core::Func PrintCharFunc {
+        "print_char", FunctionType::get(core::VoidType, {core::IntType}, false)
+    };
     const static core::Func PrintStrFunc {
         "print_str", FunctionType::get(core::VoidType, {core::StrType}, false)
     };
@@ -43,6 +46,9 @@ namespace util {
         core::Func printf = {
                 "printf", FunctionType::get(core::IntType, {core::StrType}, true)
         };
+        core::Func putchar = {
+                "putchar", FunctionType::get(core::IntType, {core::IntType}, false)
+        };
         core::Func getchar = {
                 "getchar", FunctionType::get(core::CharType, {}, false)
         };
@@ -55,6 +61,11 @@ namespace util {
         core::Func strcpy = {
                 "strcpy", FunctionType::get(core::StrType, {core::StrType, core::StrType}, false)
         };
+        core::CreateFunction(PrintCharFunc, [=](Function* f, BasicBlock* entry){
+            auto arg = f->arg_begin();
+            core::CallFunction(putchar, {arg});
+            core::Builder.CreateRetVoid();
+        });
         core::CreateFunction(PrintStrFunc, [=](Function* f, BasicBlock* entry){
             auto arg = f->arg_begin();
             auto fmt = core::Builder.CreateGlobalStringPtr("%s");
@@ -63,7 +74,7 @@ namespace util {
         });
         core::CreateFunction(PrintIntFunc, [=](Function* f, BasicBlock* entry){
             auto arg = f->arg_begin();
-            auto fmt = core::Builder.CreateGlobalStringPtr(" %lld");
+            auto fmt = core::Builder.CreateGlobalStringPtr("%lld ");
             core::CallFunction(printf, {fmt, arg});
             core::Builder.CreateRetVoid();
         });

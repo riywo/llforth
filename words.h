@@ -61,6 +61,11 @@ namespace words {
         Throw = dict::AddNativeWord("throw", [](){
             core::Builder.CreateRet(stack::Pop());
         });
+        dict::AddNativeWord("emit", [](){
+            auto value = stack::Pop();
+            core::CallFunction(util::PrintCharFunc, value);
+            CreateBrNext();
+        });
         Dot = dict::AddNativeWord(".", [](){
             auto value = stack::Pop();
             core::CallFunction(util::PrintIntFunc, value);
@@ -154,6 +159,13 @@ namespace words {
             auto right = stack::Pop();
             auto left = stack::Pop();
             auto icmp = core::Builder.CreateICmpEQ(left, right);
+            stack::Push(core::Builder.CreateIntCast(icmp, core::IntType, true));
+            CreateBrNext();
+        });
+        dict::AddNativeWord("<>", [](){
+            auto right = stack::Pop();
+            auto left = stack::Pop();
+            auto icmp = core::Builder.CreateICmpNE(left, right);
             stack::Push(core::Builder.CreateIntCast(icmp, core::IntType, true));
             CreateBrNext();
         });
