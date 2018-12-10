@@ -21,7 +21,7 @@ pub extern fn read_word(inbuf_ptr: *mut c_char, max_len: i64) -> i64 {
     let inbuf = unsafe { slice::from_raw_parts_mut(inbuf_ptr, max_len as usize) };
     let input = PROMPT.lock().unwrap().read();
     match input {
-        Input::Word(word) => {
+        Input::Word(word) | Input::Quote(word) => {
             let len = word.len();
             let c_word = CString::new(word).unwrap();
             let c_word_bytes = c_word.as_bytes_with_nul();

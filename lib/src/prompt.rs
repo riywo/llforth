@@ -12,6 +12,7 @@ pub struct Prompt {
 
 pub enum Input {
     Word(String),
+    Quote(String),
     Enter,
     Eof,
     Interrupted,
@@ -41,17 +42,13 @@ impl Prompt {
         let readline = self.editor.readline("> ");
         match readline {
             Ok(line) => {
-                let line = line.trim_end();
+                let line = line.trim();
                 if ! atty::is(Stream::Stdin) {
                     print!("{}", line);
                 }
                 if line != "" {
                     self.editor.add_history_entry(line.as_ref());
-                    for word in line.split(" ") {
-                        if word == "\\" { break }
-                        let input = Input::Word(String::from(word));
-                        self.buffer.push_back(input);
-                    }
+                    self.process_line(line);
                 }
                 self.buffer.push_back(Input::Enter);
             },
@@ -63,6 +60,39 @@ impl Prompt {
             },
             Err(err) => {
                 panic!(err);
+            },
+        }
+    }
+
+    fn process_line(&mut self, line: &str) {
+        let whitespace = line.find(char::is_whitespace);
+        match whitespace {
+            Some(index) => {
+                let (word, next) = line.split_at(index);
+                if word == "\\" {
+                    return;
+                } else if word == ".\"" {
+                    self.buffer.push_back(Input::Word(String::from(word)));
+                    let double_quote = next.find("\"");
+                    match double_quote {
+                        Some(index) => {
+                            let (string, rest) = next.split_at(index);
+                            self.buffer.push_back(Input::Quote(String::from(&string[1..])));
+                            self.process_line(&rest[1..]);
+                        },
+                        None => {
+                            self.buffer.push_back(Input::Quote(String::from(next)));
+                            return;
+                        },
+                    }
+                } else {
+                    self.buffer.push_back(Input::Word(String::from(word)));
+                    self.process_line(next.trim_left());
+                }
+            },
+            None => {
+                self.buffer.push_back(Input::Word(String::from(line)));
+                return;
             },
         }
     }

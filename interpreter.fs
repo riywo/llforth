@@ -21,6 +21,23 @@
 : loop ' r> , ' r> , ' 1+ , ' 2dup , ' = , ' 0branch , , ' 2drop , ; immediate
 : +loop ' r> , ' r> , ' rot , ' + , ' 2dup , ' = , ' 0branch , , ' 2drop , ; immediate
 
+: ."
+    state @
+    0branch .interpreting
+
+    inbuf word
+    inbuf strcpy
+    ' lit , ,
+    ' prints ,
+    exit
+
+.interpreting:
+    inbuf word
+    drop
+    inbuf prints
+
+; immediate
+
 : main
 
 .start:

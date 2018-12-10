@@ -307,6 +307,14 @@ namespace words {
             core::CallFunction(util::PrintStrFunc, cr);
             CreateBrNext();
         });
+        dict::AddNativeWord("strcpy", [](){
+            auto src = stack::PopPtr(core::StrType);
+            auto length = stack::Pop();
+            auto dst = core::Builder.CreateAlloca(core::CharType, length);
+            core::CallFunction(util::StringCopyFunc, {dst, src});
+            stack::PushPtr(dst);
+            CreateBrNext();
+        });
         Create = dict::AddNativeWord("create", [](){
             auto xt = core::Builder.CreateAlloca(dict::XtType);
             auto name = stack::PopPtr(core::StrType);

@@ -30,10 +30,25 @@ fn example_2() {
 
 #[test]
 fn example_empty() {
-    run("foo  bar", "foo  bar [(\"foo\", 3), (\"\", 0), (\"bar\", 3)]\n");
+    run("foo  bar", "foo  bar [(\"foo\", 3), (\"bar\", 3)]\n");
 }
 
 #[test]
 fn example_enter() {
     run("\nfoo", " []\nfoo [(\"foo\", 3)]\n");
+}
+
+#[test]
+fn example_comment() {
+    run("foo \\ bar", "foo \\ bar [(\"foo\", 3)]\n");
+}
+
+#[test]
+fn example_double_quote() {
+    run("foo .\" bar\"baz", "foo .\" bar\"baz [(\"foo\", 3), (\".\\\"\", 2), (\"bar\", 3), (\"baz\", 3)]\n");
+}
+
+#[test]
+fn example_double_quote_endline() {
+    run("foo .\" bar", "foo .\" bar [(\"foo\", 3), (\".\\\"\", 2), (\" bar\", 4)]\n");
 }
