@@ -8,8 +8,9 @@ fn main() {
     let mut inbuf: [c_char; 1024] = [0; 1024];
     let inbuf_ptr = inbuf.as_mut_ptr();
     let mut inputs: Vec<(CString, i64)> = Vec::new();
+    let mut reader = lib::create_reader();
     loop {
-        match lib::read_word(inbuf_ptr, 1024) {
+        match lib::read_word_from_reader(reader, inbuf_ptr, 1024) {
             0 => {
                 match inbuf[0] {
                     0 => { // Empty
@@ -28,4 +29,5 @@ fn main() {
             },
         }
     }
+    lib::destroy_reader(reader);
 }

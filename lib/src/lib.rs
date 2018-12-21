@@ -1,25 +1,32 @@
-#[macro_use]
-extern crate lazy_static;
 extern crate rustyline;
 extern crate atty;
 extern crate libc;
 
-use std::sync::Mutex;
 use libc::c_char;
-use std::ffi::CString;
+use std::ffi::{CString, CStr};
 use std::slice;
+use std::mem::transmute;
 
-mod prompt;
-use prompt::{Prompt, Input};
+mod reader;
+use reader::{Reader, Input};
 
-lazy_static! {
-    static ref PROMPT: Mutex<Prompt> = Mutex::new(Prompt::new());
+//#[no_mangle]
+//pub extern fn set_file(file_name_ptr: *const c_char) {
+//    let file_name = unsafe { CStr::from_ptr(file_name_ptr).to_str().unwrap() };
+//    READER.lock().unwrap().set_file(file_name);
+//}
+
+#[no_mangle]
+pub extern fn create_reader() -> *mut Reader {
+    let _reader = unsafe { transmute(Box::new(Reader::new())) };
+    return _reader;
 }
 
 #[no_mangle]
-pub extern fn read_word(inbuf_ptr: *mut c_char, max_len: i64) -> i64 {
+pub extern fn read_word_from_reader(ptr: *mut Reader, inbuf_ptr: *mut c_char, max_len: i64) -> i64 {
+    let mut _reader = unsafe { &mut *ptr };
     let inbuf = unsafe { slice::from_raw_parts_mut(inbuf_ptr, max_len as usize) };
-    let input = PROMPT.lock().unwrap().read();
+    let input = _reader.read();
     match input {
         Input::Word(word) | Input::Quote(word) => {
             let len = word.len();
@@ -33,9 +40,14 @@ pub extern fn read_word(inbuf_ptr: *mut c_char, max_len: i64) -> i64 {
             inbuf[0] = -1;
             return 0;
         },
-        Input::Enter => {
+        Input::Newline => {
             inbuf[0] = 10;
             return 0;
         }
     }
+}
+
+#[no_mangle]
+pub extern fn destroy_reader(ptr: *mut Reader) {
+    let _reader: Box<Reader> = unsafe { transmute(ptr) };
 }

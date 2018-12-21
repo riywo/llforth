@@ -23,6 +23,15 @@ namespace util {
     const static core::Func ReadWordFunc {
         "read_word", FunctionType::get(core::IntType, {core::StrType, core::IntType}, false)
     };
+    const static core::Func CreateReaderFunc {
+        "create_reader", FunctionType::get(core::PtrType, {}, false)
+    };
+    const static core::Func ReadWordFromReaderFunc {
+        "read_word_from_reader", FunctionType::get(core::IntType, {core::PtrType, core::StrType, core::IntType}, false)
+    };
+    const static core::Func DestroyReaderFunc {
+        "destroy_reader", FunctionType::get(core::VoidType, {core::PtrType}, false)
+    };
     const static core::Func FindXtFunc {
         "find_xt", FunctionType::get(dict::XtPtrType, {core::StrType}, false)
     };

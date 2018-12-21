@@ -36,6 +36,7 @@ namespace core {
     const static auto VoidType = Builder.getVoidTy();
     const static auto BoolType = Builder.getInt1Ty();
     const static auto IndexType = Builder.getInt32Ty();
+    const static auto PtrType = Builder.getInt8PtrTy();
 
     struct Func {
         std::string name;

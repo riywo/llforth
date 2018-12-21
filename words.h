@@ -33,7 +33,6 @@ namespace words {
     static dict::Word Comma;
 
     static Constant* StateValue;
-
     static Constant* InputBuffer;
 
     static Constant* GetConstantIntToXtPtr(int num) {
@@ -49,13 +48,15 @@ namespace words {
     };
 
     static void Initialize(Function* main, BasicBlock* entry) {
-        util::Initialize();
-
         StateValue = core::CreateGlobalVariable("state", core::IntType, core::GetInt(0), false);
-
         InputBuffer = core::CreateGlobalArrayVariable("input_buffer", core::CharType, 1024, false);
 
-        dict::AddNativeWord("bye", [](){
+        auto reader = core::CallFunction(util::CreateReaderFunc);
+
+        util::Initialize();
+
+        dict::AddNativeWord("bye", [=](){
+            core::CallFunction(util::DestroyReaderFunc, reader);
             CreateRet(0);
         });
         Throw = dict::AddNativeWord("throw", [](){
@@ -279,9 +280,10 @@ namespace words {
             stack::Push(core::Builder.CreateIntCast(c, core::IntType, true));
             CreateBrNext();
         });
-        Word = dict::AddNativeWord("word", [](){
+        Word = dict::AddNativeWord("word", [=](){
             auto buf = stack::PopPtr(core::StrType);
-            auto res = core::CallFunction(util::ReadWordFunc, {buf, core::GetInt(1024)});
+            //auto res = core::CallFunction(util::ReadWordFunc, {buf, core::GetInt(1024)});
+            auto res = core::CallFunction(util::ReadWordFromReaderFunc, {reader, buf, core::GetInt(1024)});
             stack::Push(res);
             auto is_failed = core::Builder.CreateICmpSLT(res, core::GetInt(0));
             core::Builder.CreateCondBr(is_failed, Throw.block, engine::Next);
