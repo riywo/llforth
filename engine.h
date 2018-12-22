@@ -19,7 +19,7 @@ namespace engine {
     static std::function<void()> Jump;
 
     static void Initialize() {
-        core::Func main = {"main", FunctionType::get(core::IntType, {core::IntType, core::StrType->getPointerTo()}, false)};
+        core::Func main = {"main", FunctionType::get(core::IntType, {core::IntType, core::StrPtrType}, false)};
         MainFunction = core::CreateFunction(main);
         Entry = core::CreateBasicBlock("entry", MainFunction);
         Next = core::CreateBasicBlock("next", MainFunction);

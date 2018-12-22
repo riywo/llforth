@@ -3,12 +3,19 @@ extern crate lib;
 
 use libc::c_char;
 use std::ffi::CString;
+use std::env::args;
 
 fn main() {
     let mut inbuf: [c_char; 1024] = [0; 1024];
     let inbuf_ptr = inbuf.as_mut_ptr();
+
+    let argv: Vec<CString> = std::env::args().map(|arg| CString::new(arg).unwrap() ).collect();
+    let argv: Vec<*const c_char> = argv.iter().map(|arg| arg.as_ptr()).collect();
+    let argc = argv.len();
+    let argv = argv.as_ptr();
+
     let mut inputs: Vec<(CString, i64)> = Vec::new();
-    let mut reader = lib::create_reader();
+    let mut reader = lib::create_reader(argc, argv);
     loop {
         match lib::read_word_from_reader(reader, inbuf_ptr, 1024) {
             0 => {

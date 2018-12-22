@@ -1,23 +1,35 @@
 extern crate rustyline;
 extern crate atty;
 extern crate libc;
+extern crate clap;
 
 use libc::c_char;
 use std::ffi::{CString, CStr};
 use std::slice;
 use std::mem::transmute;
+use clap::{App, Arg};
 
 mod reader;
 use reader::{Reader, Input};
 
-//#[no_mangle]
-//pub extern fn set_file(file_name_ptr: *const c_char) {
-//    let file_name = unsafe { CStr::from_ptr(file_name_ptr).to_str().unwrap() };
-//    READER.lock().unwrap().set_file(file_name);
-//}
-
 #[no_mangle]
-pub extern fn create_reader() -> *mut Reader {
+pub extern fn create_reader(argc: usize, argv: *const *const c_char) -> *mut Reader {
+    let args = unsafe { slice::from_raw_parts(argv, argc) };
+    let args: Vec<String> = args.iter().map(|arg| {
+        unsafe { CStr::from_ptr(*arg) }.to_str().unwrap().to_owned()
+    }).collect();
+    let matches = App::new("llforth")
+        .version("0.1")
+        .arg(Arg::with_name("FILE")
+            .help("Source file")
+            .index(1))
+        .get_matches_from(args);
+
+    match matches.value_of("FILE") {
+        Some(file) => eprintln!("file {}", file),
+        None => eprintln!("no file"),
+    }
+
     let _reader = unsafe { transmute(Box::new(Reader::new())) };
     return _reader;
 }

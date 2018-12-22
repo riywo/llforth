@@ -33,6 +33,7 @@ namespace core {
     const static auto IntPtrType = IntType->getPointerTo();
     const static auto CharType = Builder.getInt8Ty();
     const static auto StrType = CharType->getPointerTo();
+    const static auto StrPtrType = StrType->getPointerTo();
     const static auto VoidType = Builder.getVoidTy();
     const static auto BoolType = Builder.getInt1Ty();
     const static auto IndexType = Builder.getInt32Ty();

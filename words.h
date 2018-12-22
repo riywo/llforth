@@ -51,7 +51,10 @@ namespace words {
         StateValue = core::CreateGlobalVariable("state", core::IntType, core::GetInt(0), false);
         InputBuffer = core::CreateGlobalArrayVariable("input_buffer", core::CharType, 1024, false);
 
-        auto reader = core::CallFunction(util::CreateReaderFunc);
+        auto args = main->arg_begin();
+        auto argc = args++;
+        auto argv = args++;
+        auto reader = core::CallFunction(util::CreateReaderFunc, {argc, argv});
 
         util::Initialize();
 

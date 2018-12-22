@@ -12,6 +12,7 @@ crate-type = ["lib", "staticlib"]
 rustyline = "3.0"
 libc = "0.2"
 atty = "0.2"
+clap = "~2.32"
 
 [dev-dependencies]
 assert_cmd = "0.10"

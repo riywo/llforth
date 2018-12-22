@@ -20,11 +20,8 @@ namespace util {
     const static core::Func PrintStrFunc {
         "print_str", FunctionType::get(core::VoidType, {core::StrType}, false)
     };
-    const static core::Func ReadWordFunc {
-        "read_word", FunctionType::get(core::IntType, {core::StrType, core::IntType}, false)
-    };
     const static core::Func CreateReaderFunc {
-        "create_reader", FunctionType::get(core::PtrType, {}, false)
+        "create_reader", FunctionType::get(core::PtrType, {core::IntType, core::StrPtrType}, false)
     };
     const static core::Func ReadWordFromReaderFunc {
         "read_word_from_reader", FunctionType::get(core::IntType, {core::PtrType, core::StrType, core::IntType}, false)
