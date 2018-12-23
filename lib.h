@@ -12,7 +12,7 @@ public:
     std::optional<std::string> read();
 
 private:
-    void *raw;
+    void* raw;
 };
 
 #endif //LLFORTH_LIB_H
