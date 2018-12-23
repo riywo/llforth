@@ -1,10 +1,7 @@
-# LLForth
-[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/riywo/llforth/blob/master/LICENSE.txt)
-
+# LLForth [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/riywo/llforth/blob/master/LICENSE.txt)
 Experimental Forth implementation in LLVM.
 
 ## Getting started
-
 
 ### Prerequisites
 
@@ -24,6 +21,22 @@ make llforth
 ```
 
 ### Enjoy!
+```sh
+./llforth --help
+llforth 0.1
+
+USAGE:
+    llforth [FILE]
+
+FLAGS:
+    -h, --help       Prints help information
+    -V, --version    Prints version information
+
+ARGS:
+    <FILE>    Source file
+```
+
+## Usage
 ```sh
 ./llforth
 > 1 1 + .
