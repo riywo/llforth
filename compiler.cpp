@@ -47,26 +47,34 @@ struct Token {
         Br,
         Label,
         Colon,
+        Name,
         Semicolon,
         BrLabel,
         Immediate,
-        LitToken,
+        Lit,
+        DoubleQuote,
+        QuoteString,
     } type;
     std::string value;
 
-    explicit Token(const std::string& str) {
+    static Token get(const std::string& str, const Type& type) {
+        return Token{.value=str, .type=type};
+    }
+
+    static Token get(const std::string& str) {
         std::smatch label_match;
+        Type type;
         if (std::regex_match(str, label_match, std::regex("(\\..+):"))) {
-            type = Label;
-            value = label_match[1];
+            return get(label_match[1], Label);
         } else {
-            value = str;
             if (str == ":") { type = Colon; }
             else if (str == ";") { type = Semicolon; }
             else if (str == "branch" || str == "0branch") { type = Br; }
             else if (str == "immediate") { type = Immediate; }
-            else if (str == "'") { type = LitToken; }
+            else if (str == "'") { type = Lit; }
+            else if (str == ".\"") { type = DoubleQuote; }
             else { type = String; }
+            return get(str, type);
         }
     }
 };
@@ -79,15 +87,55 @@ static std::vector<Token> Tokenize(Reader* reader) {
     std::string line;
     std::vector<Token> tokens = {};
     while (auto str = reader->read()) {
-        auto token = Token(*str);
+        auto token = Token::get(*str);
         tokens.emplace_back(token);
+        switch (token.type) {
+            case Token::Colon: {
+                if (auto next = reader->read()) {
+                    auto next_token = Token::get(*next, Token::Name);
+                    tokens.emplace_back(next_token);
+                } else {
+                    assert(false);
+                }
+                break;
+            }
+            case Token::Br: {
+                if (auto next = reader->read()) {
+                    auto next_token = Token::get(*next, Token::BrLabel);
+                    tokens.emplace_back(next_token);
+                } else {
+                    assert(false);
+                }
+                break;
+            }
+            case Token::Lit: {
+                if (auto next = reader->read()) {
+                    auto next_token = Token::get(*next, Token::String);
+                    tokens.emplace_back(next_token);
+                } else {
+                    assert(false);
+                }
+                break;
+            }
+            case Token::DoubleQuote: {
+                if (auto next = reader->read()) {
+                    auto next_token = Token::get(*next, Token::QuoteString);
+                    tokens.emplace_back(next_token);
+                } else {
+                    assert(false);
+                }
+                break;
+            }
+            default:
+                break;
+        }
     }
     return tokens;
 }
 
 struct WordDefinition {
     struct Code {
-        enum Type {Word, Int, BrLabel} type;
+        enum Type {Word, Int, BrLabel, String} type;
         std::string value;
         Constant* xt;
     };
@@ -95,52 +143,63 @@ struct WordDefinition {
     std::string name;
     bool is_immediate = false;
     std::map<std::string, int> labels = {};
-    std::vector<Token> tokens = {};
     std::vector<Code> codes = {};
 
     void add_token(const Token& token) {
-        if (token.type == Token::Type::String && name.empty()) {
-            assert(tokens.empty());
-            name = token.value;
-        } else {
-            tokens.push_back(token);
-        }
-    }
+        switch (token.type) {
+            case Token::Name: {
+                assert(name.empty());
+                name = token.value;
+                break;
+            }
+            case Token::Label: {
+                assert(!name.empty());
+                labels[token.value] = (int)codes.size();
+                break;
+            }
+            case Token::BrLabel: {
+                assert(!name.empty());
+                codes.push_back(Code{.type=Code::BrLabel, .value=token.value});
+                break;
+            }
+            case Token::Br:
+            case Token::String: {
+                assert(!name.empty());
+                add_string(token.value);
+                break;
+            }
+            case Token::DoubleQuote:
+            case Token::Lit: {
+                assert(!name.empty());
+                add_string("lit");
+                break;
+            }
+            case Token::QuoteString: {
+                assert(!name.empty());
 
-    void preprocess() {
-        for (auto token: tokens) {
-            switch (token.type) {
-                case Token::Type::Label: {
-                    labels[token.value] = (int)codes.size();
-                    break;
-                }
-                case Token::Type::BrLabel: {
-                    codes.push_back(Code{.type=Code::Type::BrLabel, .value=token.value});
-                    break;
-                }
-                case Token::Type::String: {
-                    auto found = dict::Dictionary.find(token.value);
-                    if (found == dict::Dictionary.end()) {
-                        codes.push_back(Code{.type=Code::Type::Word, .xt = words::Lit.xt, .value="lit"});
-                        codes.push_back(Code{.type=Code::Type::Int, .xt = words::GetConstantIntToXtPtr(std::stoi(token.value)), .value=token.value});
-                    } else {
-                        codes.push_back(Code{.type=Code::Type::Word, .xt = found->second.xt, .value = token.value});
-                    }
-                    break;
-                }
-                default: {
-                    assert(false);
-                }
+                break;
+            }
+            default: {
+                assert(false);
             }
         }
     }
 
+    void add_string(const std::string& value) {
+        auto found = dict::Dictionary.find(value);
+        if (found == dict::Dictionary.end()) {
+            codes.push_back(Code{.type=Code::Word, .xt=words::Lit.xt, .value="lit"});
+            codes.push_back(Code{.type=Code::Int, .value=value});
+        } else {
+            codes.push_back(Code{.type=Code::Word, .xt=found->second.xt, .value=value});
+        }
+    }
+
     void compile() {
-        preprocess();
         auto compiled = std::vector<std::variant<Constant*,int>>();
         for (auto code: codes) {
             switch (code.type) {
-                case Code::Type::BrLabel: {
+                case Code::BrLabel: {
                     auto found = labels.find(code.value);
                     if (found == labels.end()) {
                         assert(false);
@@ -149,12 +208,12 @@ struct WordDefinition {
                     }
                     break;
                 }
-                case Code::Type::Word: {
+                case Code::Word: {
                     assert(code.xt != nullptr);
                     compiled.push_back(code.xt);
                     break;
                 }
-                case Code::Type::Int: {
+                case Code::Int: {
                     try {
                         auto xt = words::GetConstantIntToXtPtr(std::stoi(code.value));
                         compiled.push_back(xt);
@@ -163,6 +222,8 @@ struct WordDefinition {
                     }
                     break;
                 }
+                default:
+                    assert(false);
             }
         }
         dict::AddColonWord(name, words::Docol.addr, compiled, is_immediate);
@@ -185,53 +246,22 @@ static std::vector<WordDefinition> Parse(const std::vector<Token>& tokens) {
     std::vector<WordDefinition> words = {};
     WordDefinition def;
     bool is_def = false;
-    bool is_label = false;
-    bool is_lit_token = false;
     for (auto token: tokens) {
         switch (token.type) {
-            case Token::Type::Colon: {
+            case Token::Colon: {
                 assert(!is_def);
                 is_def = true;
                 def = WordDefinition();
                 break;
             }
-            case Token::Type::Semicolon: {
+            case Token::Semicolon: {
                 assert(is_def);
-                def.add_token(Token("exit"));
+                def.add_token(Token::get("exit"));
                 words.push_back(def);
                 is_def = false;
                 break;
             }
-            case Token::Type::Br: {
-                assert(is_def);
-                if (is_lit_token) {
-                    is_lit_token = false;
-                } else {
-                    assert(!is_label);
-                    is_label = true;
-                }
-                token.type = Token::Type::String;
-                def.add_token(token);
-                break;
-            }
-            case Token::Type::String: {
-                assert(is_def);
-                if (is_label) {
-                    token.type = Token::Type::BrLabel;
-                    is_label = false;
-                }
-                if (is_lit_token) {
-                    is_lit_token = false;
-                }
-                def.add_token(token);
-                break;
-            }
-            case Token::Type::Label: {
-                assert(is_def);
-                def.add_token(token);
-                break;
-            }
-            case Token::Type::Immediate: {
+            case Token::Immediate: {
                 assert(!is_def);
                 auto last_word = words.back();
                 words.pop_back();
@@ -239,17 +269,10 @@ static std::vector<WordDefinition> Parse(const std::vector<Token>& tokens) {
                 words.push_back(last_word);
                 break;
             }
-            case Token::Type::LitToken: {
+            default: {
                 assert(is_def);
-                assert(!is_lit_token);
-                is_lit_token = true;
-                token.type = Token::Type::String;
-                token.value = "lit";
                 def.add_token(token);
                 break;
-            }
-            default: {
-                assert(false);
             }
         }
     }
