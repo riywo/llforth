@@ -2,7 +2,7 @@
 Experimental Forth implementation in LLVM.
 
 ## Summary
-This software is built for a personal research to understand computer architecture. Impmlementing stack-based programming language([Forth](https://en.wikipedia.org/wiki/Forth_(programming_language))) using a register-based virtual machine ([LLVM](https://en.wikipedia.org/wiki/LLVM)) is useful to know both machine/language architecture.
+This software is built for a personal research to understand computer architecture. Implementing stack-based programming language([Forth](https://en.wikipedia.org/wiki/Forth_(programming_language))) using a register-based virtual machine ([LLVM](https://en.wikipedia.org/wiki/LLVM)) is useful to know both machine/language architecture.
 
 LLForth uses following technique:
 
@@ -96,6 +96,4 @@ See https://github.com/riywo/llforth/wiki/Architecture
 This project is heavily inspired from a book [*"Low-Level Programming"*](https://amzn.to/2BBYugn) which has a great section for implementing Forth using x86_64 assembly only. The code base is also available from the author's repository called [Forthress](https://github.com/sayon/forthress) under MIT License. Most of architectures of LLForth are borrowed from Forthless, for example ITC, Memory cell, etc.
 
 ### Series of posts on the evolution of TransForth
-On top of assembly implementation mirrored from Forthress, I implemented some forth words *by* forth, for example `if ... else ... then` or `begin ... until`. For those words are borrowed from [*"Series of posts on the evolution of TransForth"*](https://blogs.msdn.microsoft.com/ashleyf/tag/transforth/). The code base is also available on [TransForth](https://github.com/AshleyF/TransForth) under MIT License.
-
-
+On top of the assembly implementation mirrored from Forthress, I implemented some forth words *by* forth, for example `if ... else ... then` or `begin ... until`. Those words are borrowed from [*"Series of posts on the evolution of TransForth"*](https://blogs.msdn.microsoft.com/ashleyf/tag/transforth/) which are awesome read to understand Forth architecture. The code base is also available on [TransForth](https://github.com/AshleyF/TransForth) under MIT License.
