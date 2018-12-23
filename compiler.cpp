@@ -240,7 +240,7 @@ static void MainLoop(std::istream& input) {
     }
 }
 
-int main(int argc, char* argv[]) {
+int main(int argc, char** argv) {
     core::CreateModule("main");
     engine::Initializers = {
             dict::Initialize,
@@ -251,7 +251,7 @@ int main(int argc, char* argv[]) {
             dict::Finalize,
     };
     engine::Initialize();
-    auto code = std::vector<std::variant<Constant*,int>>();
+
     if (argc > 1) {
         std::ifstream input(argv[1]);
         if (input) {
@@ -263,6 +263,7 @@ int main(int argc, char* argv[]) {
     } else {
         MainLoop(std::cin);
     }
-    engine::Finalize(code);
+
+    engine::Finalize();
     core::DumpModule();
 }

@@ -139,7 +139,7 @@ namespace dict {
         };
     }
 
-    static void Finalize(const std::vector<std::variant<Constant*,int>>& code) {
+    static void Finalize() {
         HereValue = core::CreateGlobalVariable("here", core::IndexType, core::GetIndex(InitialMemory.size()), false);
         InitialMemory.resize(1024, ConstantPointerNull::get(XtPtrType));
         Memory = core::CreateGlobalArrayVariable("dict_memory", XtPtrType, InitialMemory, false);
