@@ -7,6 +7,39 @@
 #include "words.h"
 #include "stack.h"
 #include "util.h"
+#include "lib.h"
+
+extern "C" {
+    void* create_reader(int, char**);
+    int read_word_from_reader(void*, char*, int);
+    void destroy_reader(void*);
+}
+
+Reader::Reader(int argc, char** argv) {
+    raw = create_reader(argc, argv);
+}
+
+Reader::~Reader() {
+    destroy_reader(raw);
+}
+
+std::optional<std::string> Reader::read() {
+    char buf[1024];
+    char* ptr = buf;
+    int num = read_word_from_reader(raw, ptr, 1024);
+    if (num == 0) {
+        switch(buf[0]) {
+            case 0:
+            case 10:
+                return read();
+            default:
+                return std::nullopt;
+        }
+    }
+    std::string s(buf);
+    assert(s.size() == num);
+    return s;
+}
 
 struct Token {
     enum Type {
@@ -42,20 +75,12 @@ std::ostream& operator<<(std::ostream& os, const Token& token) {
     return os << token.type << " " << token.value;
 }
 
-static std::vector<Token> Tokenize(std::istream& input) {
+static std::vector<Token> Tokenize(Reader* reader) {
     std::string line;
     std::vector<Token> tokens = {};
-    while (std::getline(input, line)) {
-        std::string str;
-        std::stringstream linestream(line);
-        while (linestream >> str) {
-            if (str == "\\") {
-                break;
-            } else {
-                auto token = Token(str);
-                tokens.emplace_back(token);
-            }
-        }
+    while (auto str = reader->read()) {
+        auto token = Token(*str);
+        tokens.emplace_back(token);
     }
     return tokens;
 }
@@ -231,8 +256,9 @@ static std::vector<WordDefinition> Parse(const std::vector<Token>& tokens) {
     return words;
 }
 
-static void MainLoop(std::istream& input) {
-    auto tokens = Tokenize(input);
+static void MainLoop(int argc, char** argv) {
+    Reader reader(argc, argv);
+    auto tokens = Tokenize(&reader);
     auto words = Parse(tokens);
     for (auto w: words) {
         w.compile();
@@ -252,17 +278,7 @@ int main(int argc, char** argv) {
     };
     engine::Initialize();
 
-    if (argc > 1) {
-        std::ifstream input(argv[1]);
-        if (input) {
-            MainLoop(input);
-        } else {
-            std::cerr << "No such file: " << argv[1] << std::endl;
-            exit(1);
-        }
-    } else {
-        MainLoop(std::cin);
-    }
+    MainLoop(argc, argv);
 
     engine::Finalize();
     core::DumpModule();
