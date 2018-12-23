@@ -15,37 +15,21 @@ pub enum Input {
 }
 
 pub struct Reader {
-    editor: Editor<()>,
     buffer: VecDeque<Input>,
+    editor: Editor<()>,
 }
 
 impl Reader {
     pub fn new() -> Reader {
-        let config = Config::builder()
-            .build();
-        Reader {
-            editor: Editor::<()>::with_config(config),
-            buffer: VecDeque::new(),
-        }
-    }
-
-    pub fn set_file(&mut self, file_name: &str) {
-//        match File::open(file_name) {
-//            Ok(file) => self.file = Some(file),
-//            Err(err) => panic!(err),
-//        }
+        let buffer = VecDeque::new();
+        let editor = Editor::<()>::with_config(Config::builder()
+            .build());
+        Reader { buffer, editor }
     }
 
     pub fn read(&mut self) -> Input {
-//        if self.buffer.is_empty() {
-//            if self.file.is_some() {
-//                self.read_file();
-//            } else {
-//                self.read_line();
-//            }
-//        }
         if self.buffer.is_empty() {
-            self.read_line();
+            self.read_line()
         }
         match self.buffer.pop_front() {
             Some(input) => return input,
@@ -53,11 +37,19 @@ impl Reader {
         }
     }
 
-    fn read_file(&mut self) {
-//        let file = self.file.unwrap();
-//        let f = BufReader::new(file);
-//        for line in f.lines() {
-//        }
+    pub fn read_file(&mut self, file: &str) {
+        let file = File::open(file).expect("Can't open file");
+        let file = BufReader::new(file);
+        for line in file.lines() {
+            match line {
+                Ok(line) => {
+                    self.process_line(line.trim());
+                    self.buffer.push_back(Input::Newline);
+                },
+                Err(e) => panic!(e)
+            }
+        }
+        self.buffer.push_back(Input::Eof);
     }
 
     fn read_line(&mut self) {

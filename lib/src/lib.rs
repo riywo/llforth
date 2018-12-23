@@ -25,12 +25,12 @@ pub extern fn create_reader(argc: usize, argv: *const *const c_char) -> *mut Rea
             .index(1))
         .get_matches_from(args);
 
-    match matches.value_of("FILE") {
-        Some(file) => eprintln!("file {}", file),
-        None => eprintln!("no file"),
+    let mut _reader = Reader::new();
+    let file = matches.value_of("FILE");
+    if file.is_some() {
+        _reader.read_file(file.unwrap())
     }
-
-    let _reader = unsafe { transmute(Box::new(Reader::new())) };
+    let _reader = unsafe { transmute(Box::new(_reader)) };
     return _reader;
 }
 

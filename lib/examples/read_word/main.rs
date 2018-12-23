@@ -9,7 +9,7 @@ fn main() {
     let mut inbuf: [c_char; 1024] = [0; 1024];
     let inbuf_ptr = inbuf.as_mut_ptr();
 
-    let argv: Vec<CString> = std::env::args().map(|arg| CString::new(arg).unwrap() ).collect();
+    let argv: Vec<CString> = args().map(|arg| CString::new(arg).unwrap() ).collect();
     let argv: Vec<*const c_char> = argv.iter().map(|arg| arg.as_ptr()).collect();
     let argc = argv.len();
     let argv = argv.as_ptr();
