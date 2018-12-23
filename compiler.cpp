@@ -83,55 +83,35 @@ std::ostream& operator<<(std::ostream& os, const Token& token) {
     return os << token.type << " " << token.value;
 }
 
-static std::vector<Token> Tokenize(Reader* reader) {
-    std::string line;
+struct Tokenizer {
     std::vector<Token> tokens = {};
-    while (auto str = reader->read()) {
-        auto token = Token::get(*str);
-        tokens.emplace_back(token);
-        switch (token.type) {
-            case Token::Colon: {
-                if (auto next = reader->read()) {
-                    auto next_token = Token::get(*next, Token::Name);
-                    tokens.emplace_back(next_token);
-                } else {
-                    assert(false);
-                }
-                break;
+    Reader* reader;
+
+    explicit Tokenizer(Reader* _reader) { reader = _reader; }
+
+    void run() {
+        while (auto str = reader->read()) {
+            auto token = Token::get(*str);
+            tokens.emplace_back(token);
+            switch (token.type) {
+                case Token::Colon: add_next(Token::Name); break;
+                case Token::Br: add_next(Token::BrLabel); break;
+                case Token::Lit: add_next(Token::String); break;
+                case Token::DoubleQuote: add_next(Token::QuoteString); break;
+                default: break;
             }
-            case Token::Br: {
-                if (auto next = reader->read()) {
-                    auto next_token = Token::get(*next, Token::BrLabel);
-                    tokens.emplace_back(next_token);
-                } else {
-                    assert(false);
-                }
-                break;
-            }
-            case Token::Lit: {
-                if (auto next = reader->read()) {
-                    auto next_token = Token::get(*next, Token::String);
-                    tokens.emplace_back(next_token);
-                } else {
-                    assert(false);
-                }
-                break;
-            }
-            case Token::DoubleQuote: {
-                if (auto next = reader->read()) {
-                    auto next_token = Token::get(*next, Token::QuoteString);
-                    tokens.emplace_back(next_token);
-                } else {
-                    assert(false);
-                }
-                break;
-            }
-            default:
-                break;
         }
     }
-    return tokens;
-}
+
+    void add_next(const Token::Type& type) {
+        if (auto next = reader->read()) {
+            auto next_token = Token::get(*next, type);
+            tokens.emplace_back(next_token);
+        } else {
+            assert(false);
+        }
+    }
+};
 
 struct WordDefinition {
     struct Code {
@@ -147,41 +127,24 @@ struct WordDefinition {
 
     void add_token(const Token& token) {
         switch (token.type) {
-            case Token::Name: {
-                assert(name.empty());
-                name = token.value;
-                break;
-            }
-            case Token::Label: {
-                assert(!name.empty());
-                labels[token.value] = (int)codes.size();
-                break;
-            }
-            case Token::BrLabel: {
-                assert(!name.empty());
-                codes.push_back(Code{.type=Code::BrLabel, .value=token.value});
-                break;
-            }
+            case Token::Name:
+                name = token.value; break;
+            case Token::Label:
+                labels[token.value] = (int)codes.size(); break;
+            case Token::BrLabel:
+                codes.push_back(Code{.type=Code::BrLabel, .value=token.value}); break;
             case Token::Br:
-            case Token::String: {
-                assert(!name.empty());
-                add_string(token.value);
-                break;
-            }
+            case Token::String:
+                add_string(token.value); break;
             case Token::DoubleQuote:
-            case Token::Lit: {
-                assert(!name.empty());
-                add_string("lit");
+            case Token::Lit:
+                add_string("lit"); break;
+            case Token::QuoteString:
+                codes.push_back(Code{.type=Code::String, .value=token.value});
+                add_string("prints");
                 break;
-            }
-            case Token::QuoteString: {
-                assert(!name.empty());
-
-                break;
-            }
-            default: {
-                assert(false);
-            }
+            default:
+                assert(false); break;
         }
     }
 
@@ -196,6 +159,7 @@ struct WordDefinition {
     }
 
     void compile() {
+        add_string("exit");
         auto compiled = std::vector<std::variant<Constant*,int>>();
         for (auto code: codes) {
             switch (code.type) {
@@ -222,6 +186,11 @@ struct WordDefinition {
                     }
                     break;
                 }
+                case Code::String: {
+                    auto xt = words::GetConstantStrToXtPtr(code.value);
+                    compiled.push_back(xt);
+                    break;
+                }
                 default:
                     assert(false);
             }
@@ -246,7 +215,9 @@ static std::vector<WordDefinition> Parse(const std::vector<Token>& tokens) {
     std::vector<WordDefinition> words = {};
     WordDefinition def;
     bool is_def = false;
-    for (auto token: tokens) {
+    auto it = tokens.begin();
+    while (it != tokens.end()) {
+        auto token = *it++;
         switch (token.type) {
             case Token::Colon: {
                 assert(!is_def);
@@ -256,17 +227,14 @@ static std::vector<WordDefinition> Parse(const std::vector<Token>& tokens) {
             }
             case Token::Semicolon: {
                 assert(is_def);
-                def.add_token(Token::get("exit"));
-                words.push_back(def);
                 is_def = false;
-                break;
-            }
-            case Token::Immediate: {
-                assert(!is_def);
-                auto last_word = words.back();
-                words.pop_back();
-                last_word.is_immediate = true;
-                words.push_back(last_word);
+                auto next = *it++;
+                if (next.type == Token::Immediate) {
+                    def.is_immediate = true;
+                } else {
+                    it--;
+                }
+                words.push_back(def);
                 break;
             }
             default: {
@@ -281,8 +249,9 @@ static std::vector<WordDefinition> Parse(const std::vector<Token>& tokens) {
 
 static void MainLoop(int argc, char** argv) {
     Reader reader(argc, argv);
-    auto tokens = Tokenize(&reader);
-    auto words = Parse(tokens);
+    Tokenizer tokenizer(&reader);
+    tokenizer.run();
+    auto words = Parse(tokenizer.tokens);
     for (auto w: words) {
         w.compile();
         std::cerr << w << std::endl;

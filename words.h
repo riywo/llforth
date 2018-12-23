@@ -39,6 +39,11 @@ namespace words {
         return ConstantExpr::getIntToPtr(ConstantInt::get(core::IntType, num), dict::XtPtrType);
     }
 
+    static Constant* GetConstantStrToXtPtr(const std::string& str) {
+        auto ptr = core::Builder.CreateGlobalStringPtr(str);
+        return ConstantExpr::getPointerCast(ptr, dict::XtPtrType);
+    }
+
     static void CreateBrNext() {
         core::Builder.CreateBr(engine::Next);
     };
