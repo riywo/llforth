@@ -6,7 +6,7 @@ This software is built for a personal research to understand computer architectu
 
 LLForth uses following technique:
 
-- Restricted static compiler (`llfortc`) from Forth to LLVM Intermediate Representation (LLVM IR) and Full feature interpreter (`llforth`) written in Forth and compiled by `llforthc`
+- Restricted static compiler (`llforthc`) from Forth to LLVM Intermediate Representation (LLVM IR) and Full feature interpreter (`llforth`) written in Forth and compiled by `llforthc`
 - [Indirect Threaded Code (ITC)](https://en.wikipedia.org/wiki/Threaded_code#Indirect_threading) to implement inner interpreter by LLVM IR
 - Naive memory implementation for Stack and Return Stack by LLVM IR
 - Partial memory cell for only word definitions excluding string of name of words
