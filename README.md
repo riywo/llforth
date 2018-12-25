@@ -17,6 +17,7 @@ LLForth uses following technique:
 ### Prerequisites (versions are tested by the author)
 - CMake (3.13.2)
 - LLVM (7.0.0)
+    - lit (from [PyPI](https://pypi.org/project/lit/) or under LLVM source code)
 - Rust (1.31.1)
 
 ### Build
