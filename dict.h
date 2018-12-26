@@ -17,7 +17,7 @@ namespace dict {
             xt_ptr_type,     // Previous word
             core::StrType,   // Word of node
             AddressType,     // Implementation address
-            core::IndexType,
+            core::IndexType, // Starting index on main memory array for colon word
             core::BoolType,  // Immediate flag
         });
         return xt_type;
