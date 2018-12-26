@@ -1,6 +1,8 @@
 # LLForth [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/riywo/llforth/blob/master/LICENSE.txt)
 Experimental Forth implementation in LLVM.
 
+Introduction blog post is here: https://medium.com/@riywo/llforth-experimental-implementation-of-forth-in-llvm-2298c76ec3ac
+
 ## Summary
 This software is built for a personal research to understand computer architecture. Implementing stack-based programming language([Forth](https://en.wikipedia.org/wiki/Forth_(programming_language))) using a register-based virtual machine ([LLVM](https://en.wikipedia.org/wiki/LLVM)) is useful to know both machine/language architecture.
 
